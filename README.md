@@ -1,73 +1,98 @@
-# React + TypeScript + Vite
+# 📋 Kanban Board
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A sleek, modern, and highly interactive **Kanban Board** application built with the latest web technologies. This project focuses on a premium user experience with smooth drag-and-drop interactions, a minimalist design, and a responsive layout.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Key Features
 
-## React Compiler
+- **🎯 Fluid Drag & Drop**: Seamlessly move tasks between "To Do", "Doing", and "Done" columns using `@dnd-kit`.
+- **➕ Quick Task Creation**: Effortlessly add new tasks with a clean, intuitive input interface.
+- **✨ Premium UI/UX**:
+  - **Custom Cursor**: Interactive cursor that reacts to your movements.
+  - **Glassmorphism**: Subtle shadows and borders for a modern look.
+  - **Animated Transitions**: Smooth hover effects and task movements.
+- **👤 User Personalization**: Greets you by name, with persistent storage in `localStorage`.
+- **📱 Responsive Layout**: Optimized for both desktop and mobile views.
+- **🛠️ Tech Stack Integration**: Leveraging Tailwind CSS 4 for cutting-edge styling.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🚀 Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Framework**: [React 19](https://react.dev/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Drag & Drop**: [@dnd-kit/core](https://dndkit.com/)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 📂 Project Structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/
+├── components/          # Reusable UI components
+│   ├── Board.tsx       # Main board logic & DND context
+│   ├── Column.tsx      # Task column container
+│   ├── TaskCard.tsx    # Individual draggable task
+│   ├── Sidebar.tsx     # Navigation & Project Space
+│   ├── Header.tsx      # Main top header
+│   └── BoardHeader.tsx # Task input & Board metadata
+├── type/               # TypeScript definitions
+├── App.tsx             # Main application layout
+└── main.tsx            # Entry point
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Installation & Setup
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Follow these steps to get the project running locally:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/AumMule/Kanban-Board.git
+   cd kanban-board
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 📝 Roadmap
+
+- [ ] Task persistence with a backend (Firebase/Supabase).
+- [ ] Editable task titles and descriptions.
+- [ ] Task deletion functionality.
+- [ ] Due dates and priority tags.
+- [ ] Dark mode support.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License.
+
+---
+
+Made with ❤️ by [Aum Mule](https://github.com/AumMule)
