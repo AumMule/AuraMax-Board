@@ -1,0 +1,10 @@
+@import "tailwindcss";
+/* Hide the real cursor globally */
+* {
+  cursor: none !important;
+}
+
+/* Ensure you can still see where you're typing in inputs */
+input, textarea {
+  cursor: text !important;
+}
