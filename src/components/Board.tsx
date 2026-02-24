@@ -1,18 +1,36 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import BoardHeader from './BoardHeader'
 import Column from './Column'
 
 import { DndContext } from "@dnd-kit/core";
 
 
+interface Task {
+    id: string;
+    title: string;
+    status: string;
+}
+
 const Board = () => {
+    const [tasks, setTasks] = useState<Task[]>(() => {
+        try {
+            const savedTasks = localStorage.getItem("kanban-tasks");
+            if (savedTasks) {
+                return JSON.parse(savedTasks);
+            }
+        } catch (error) {
+            console.error("Error parsing tasks from localStorage:", error);
+        }
+        return [
+            { id: "1", title: "Learn React", status: "todo" },
+            { id: "2", title: "Build Kanban UI", status: "doing" },
+            { id: "3", title: "Push to GitHub", status: "done" },
+        ];
+    });
 
-
-    const [tasks, setTasks] = useState([
-        { id: "1", title: "Learn React", status: "todo" },
-        { id: "2", title: "Build Kanban UI", status: "doing" },
-        { id: "3", title: "Push to GitHub", status: "done" },
-    ]);
+    useEffect(() => {
+        localStorage.setItem("kanban-tasks", JSON.stringify(tasks));
+    }, [tasks]);
 
     const columnTitle = [{ name: "To Do", status: "todo" }, { name: "Doing", status: "doing" }, { name: "Done", status: "done" }];
 
