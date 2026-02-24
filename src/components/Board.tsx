@@ -39,6 +39,10 @@ const Board = () => {
         setTasks([...tasks, newTask]);
     }
 
+    const deleteTask = (id: string) => {
+        setTasks(tasks.filter(task => task.id !== id));
+    }
+
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
 
@@ -71,6 +75,7 @@ const Board = () => {
                                 columnTitle={col.name}
                                 status={col.status}
                                 tasks={tasks.filter(task => task.status === col.status)}
+                                deleteTask={deleteTask}
                             />
                         </div>
                     ))}

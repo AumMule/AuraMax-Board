@@ -12,10 +12,11 @@ type ColumnProps = {
   columnTitle: string;
   status: string;
   tasks: Task[];
+  deleteTask: (id: string) => void;
 }
 
 
-const Column = ({ columnTitle, tasks, status }: ColumnProps) => {
+const Column = ({ columnTitle, tasks, status, deleteTask }: ColumnProps) => {
   const { setNodeRef } = useDroppable({ id: status });
 
   return (
@@ -44,8 +45,8 @@ const Column = ({ columnTitle, tasks, status }: ColumnProps) => {
       </div>
 
       <div className="tasks space-y-3">
-        {tasks.map((t: any) => (
-          <TaskCard key={t.id} task={t} />
+        {tasks.map((t: Task) => (
+          <TaskCard key={t.id} task={t} deleteTask={deleteTask} />
         ))}
       </div>
     </div>
