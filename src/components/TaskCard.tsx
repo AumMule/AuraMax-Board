@@ -264,10 +264,26 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay, is
       {!isFocusMode && (
         <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <Clock size={10} />
-              <span>{Math.floor((now - task.createdAt) / 3600000)}h</span>
-            </div>
+            {task.dueDate ? (
+              <div className={cn(
+                "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                task.dueDate < Date.now() && task.status !== 'done'
+                  ? "bg-red-50 text-red-500 animate-pulse"
+                  : "bg-slate-100/50 text-slate-400"
+              )}>
+                <Clock size={10} />
+                <span>
+                  {task.dueDate < Date.now() && task.status !== 'done'
+                    ? "Overdue"
+                    : `${Math.ceil((task.dueDate - Date.now()) / 86400000)}d`}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <Clock size={10} />
+                <span>{Math.floor((now - task.createdAt) / 3600000)}h</span>
+              </div>
+            )}
             <div className={cn(
               "h-1.5 w-1.5 rounded-full",
               task.urgency >= 5 ? "bg-red-500" :

@@ -19,4 +19,5 @@ export interface Task {
   tags?: string[];
   coverImage?: string;
   color?: string;
+  dueDate?: number;
 }

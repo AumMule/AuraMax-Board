@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import BoardHeader from './BoardHeader'
 import Column from './Column'
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { AnimatePresence, motion } from "framer-motion";
 import TaskCard from './TaskCard';
-import { Eye, EyeOff, Search, SlidersHorizontal, Maximize2, Minimize2 } from 'lucide-react';
+import { Search, SlidersHorizontal, Maximize2, Minimize2, Undo2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { Task } from '../type/task';
 import TaskDetailsModal from './TaskDetailsModal';
@@ -28,8 +28,8 @@ const Board = () => {
                 status: "doing",
                 urgency: 5,
                 impact: 5,
-                createdAt: now - 86400000, // 24h ago
-                statusChangedAt: now - 3600000, // 1h ago
+                createdAt: now - 86400000,
+                statusChangedAt: now - 3600000,
                 checklists: [
                     { id: "c1", text: "Choose color palette", completed: true },
                     { id: "c2", text: "Apply blur filters", completed: false }
@@ -37,7 +37,7 @@ const Board = () => {
             },
             {
                 id: "2",
-                title: "Implement Zen Mode",
+                title: "Implement Focus Mode",
                 status: "todo",
                 urgency: 4,
                 impact: 4,
@@ -59,12 +59,16 @@ const Board = () => {
     });
 
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [isZenMode, setIsZenMode] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterUrgency, setFilterUrgency] = useState<number | null>(null);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Undo delete state
+    const [deletedTask, setDeletedTask] = useState<Task | null>(null);
+    const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -108,9 +112,38 @@ const Board = () => {
         setTasks([...tasks, newTask]);
     }
 
-    const deleteTask = (id: string) => {
-        setTasks(tasks.filter(task => task.id !== id));
-    }
+    const deleteTask = useCallback((id: string) => {
+        const taskToDelete = tasks.find(t => t.id === id);
+        if (!taskToDelete) return;
+
+        // Clear any existing undo timer
+        if (undoTimer) clearTimeout(undoTimer);
+
+        // Save the deleted task for undo
+        setDeletedTask(taskToDelete);
+        setTasks(prev => prev.filter(task => task.id !== id));
+
+        // Auto-dismiss after 5 seconds
+        const timer = setTimeout(() => {
+            setDeletedTask(null);
+        }, 5000);
+        setUndoTimer(timer);
+    }, [tasks, undoTimer]);
+
+    const undoDelete = useCallback(() => {
+        if (deletedTask) {
+            setTasks(prev => [...prev, deletedTask]);
+            setDeletedTask(null);
+            if (undoTimer) clearTimeout(undoTimer);
+            setUndoTimer(null);
+        }
+    }, [deletedTask, undoTimer]);
+
+    const dismissUndo = useCallback(() => {
+        setDeletedTask(null);
+        if (undoTimer) clearTimeout(undoTimer);
+        setUndoTimer(null);
+    }, [undoTimer]);
 
     const updateTask = (updatedTask: Task) => {
         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
@@ -177,6 +210,45 @@ const Board = () => {
         setIsModalOpen(true);
     };
 
+    // Undo Toast Component
+    const UndoToast = () => (
+        <AnimatePresence>
+            {deletedTask && (
+                <motion.div
+                    initial={{ opacity: 0, y: 80, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 80, scale: 0.9 }}
+                    className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-4 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-slate-900/40 border border-slate-700/50"
+                >
+                    <span className="text-sm font-medium">
+                        <span className="text-white/50">Deleted</span>{" "}
+                        <span className="font-bold">&ldquo;{deletedTask.title}&rdquo;</span>
+                    </span>
+                    <button
+                        onClick={undoDelete}
+                        className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                    >
+                        <Undo2 size={12} />
+                        Undo
+                    </button>
+                    <button
+                        onClick={dismissUndo}
+                        className="text-white/30 hover:text-white/60 transition-colors p-1"
+                    >
+                        <X size={14} />
+                    </button>
+                    {/* Progress bar */}
+                    <motion.div
+                        initial={{ scaleX: 1 }}
+                        animate={{ scaleX: 0 }}
+                        transition={{ duration: 5, ease: "linear" }}
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 origin-left rounded-b-2xl"
+                    />
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
     // Focus Mode: completely separate fullscreen view
     if (isFocusMode) {
         const doingTasks = tasks.filter(t => t.status === 'doing');
@@ -189,10 +261,8 @@ const Board = () => {
                 animate={{ opacity: 1 }}
                 className="fixed inset-0 z-[999] bg-[#06080c] overflow-y-auto"
             >
-                {/* Subtle gradient glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
 
-                {/* Exit button — tiny, top-right corner */}
                 <button
                     onClick={() => setIsFocusMode(false)}
                     className="fixed top-8 right-8 z-[1000] px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white hover:bg-white/[0.12] transition-all text-[10px] font-bold uppercase tracking-[0.2em]"
@@ -202,7 +272,6 @@ const Board = () => {
                 </button>
 
                 <div className="relative z-10 max-w-3xl mx-auto px-8 py-24">
-                    {/* Doing — primary */}
                     {doingTasks.length > 0 && (
                         <div className="mb-20">
                             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-400/60 mb-8">In Orbit</p>
@@ -219,13 +288,20 @@ const Board = () => {
                                         <span className="text-3xl md:text-4xl font-bold text-white/90 tracking-tight leading-tight group-hover:text-indigo-300 transition-colors duration-300">
                                             {task.title}
                                         </span>
+                                        {task.dueDate && (
+                                            <span className={cn(
+                                                "ml-4 text-[10px] font-bold uppercase tracking-wider",
+                                                task.dueDate < Date.now() ? "text-red-400" : "text-white/20"
+                                            )}>
+                                                {task.dueDate < Date.now() ? "OVERDUE" : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
+                                            </span>
+                                        )}
                                     </motion.div>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Todo — secondary */}
                     {todoTasks.length > 0 && (
                         <div className="mb-20">
                             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/20 mb-8">Backlog</p>
@@ -248,7 +324,6 @@ const Board = () => {
                         </div>
                     )}
 
-                    {/* Done — faded */}
                     {doneTasks.length > 0 && (
                         <div className="mb-20">
                             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/10 mb-8">Architected</p>
@@ -285,6 +360,7 @@ const Board = () => {
                     onUpdate={updateTask}
                     onDelete={deleteTask}
                 />
+                <UndoToast />
             </motion.div>
         );
     }
@@ -297,10 +373,7 @@ const Board = () => {
             onDragEnd={handleDragEnd}
         >
             <div className="relative h-screen w-full overflow-hidden">
-                <div className={cn(
-                    "mesh-bg absolute inset-0 transition-all duration-700",
-                    isZenMode && "blur-[12px] saturate-[0.5] scale-105"
-                )} />
+                <div className="mesh-bg absolute inset-0" />
 
                 <div className="relative z-10 flex h-full flex-col">
                     <div className="flex-shrink-0">
@@ -309,7 +382,7 @@ const Board = () => {
 
                     {/* Filter & Search Bar */}
                     <div className="flex items-center justify-between px-8 py-4">
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
                                 <input
@@ -320,87 +393,93 @@ const Board = () => {
                                     className="bg-white/40 backdrop-blur-md border border-white/40 rounded-2xl py-2.5 pl-10 pr-4 w-64 outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 ring-indigo-500/10 transition-all shadow-lg shadow-slate-900/5 focus:bg-white/80"
                                 />
                             </div>
+
+                            {/* Filter Toggle */}
                             <div className="flex items-center gap-2">
-                                <SlidersHorizontal size={14} className="text-slate-400" />
-                                <div className="flex gap-1">
-                                    {[null, 5, 4, 3, 1].map((u) => (
-                                        <button
-                                            key={u?.toString() || 'all'}
-                                            onClick={() => setFilterUrgency(u)}
-                                            className={cn(
-                                                "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                filterUrgency === u
-                                                    ? "bg-slate-900 text-white shadow-lg"
-                                                    : "bg-white/40 text-slate-400 hover:bg-white/60"
-                                            )}
+                                <button
+                                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                        isFilterOpen || filterUrgency
+                                            ? "bg-slate-900 text-white shadow-lg"
+                                            : "bg-white/40 text-slate-400 hover:bg-white/60 border border-white/40"
+                                    )}
+                                >
+                                    <SlidersHorizontal size={12} />
+                                    Filter
+                                    {filterUrgency && (
+                                        <span className="ml-1 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                                    )}
+                                </button>
+
+                                <AnimatePresence>
+                                    {isFilterOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, width: 0 }}
+                                            animate={{ opacity: 1, width: 'auto' }}
+                                            exit={{ opacity: 0, width: 0 }}
+                                            className="flex gap-1 overflow-hidden"
                                         >
-                                            {u === null ? 'All' : u === 5 ? 'Critical' : u === 4 ? 'High' : u === 3 ? 'Mid' : 'Low'}
-                                        </button>
-                                    ))}
-                                </div>
+                                            {[null, 5, 4, 3, 1].map((u) => (
+                                                <button
+                                                    key={u?.toString() || 'all'}
+                                                    onClick={() => setFilterUrgency(u)}
+                                                    className={cn(
+                                                        "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                                                        filterUrgency === u
+                                                            ? "bg-indigo-600 text-white shadow-lg"
+                                                            : "bg-white/40 text-slate-400 hover:bg-white/60"
+                                                    )}
+                                                >
+                                                    {u === null ? 'All' : u === 5 ? 'Critical' : u === 4 ? 'High' : u === 3 ? 'Mid' : 'Low'}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
+
+                        {/* Focus Mode — right side */}
+                        <button
+                            onClick={() => setIsFocusMode(true)}
+                            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-lg hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95"
+                        >
+                            <Maximize2 size={12} />
+                            Focus
+                        </button>
                     </div>
 
                     <div className="flex flex-1 justify-center overflow-hidden px-8 pb-8 pt-2">
-                        <div className={cn(
-                            "flex h-full gap-8 overflow-x-auto pb-4 transition-all duration-500",
-                            isZenMode ? "max-w-4xl" : "w-full"
-                        )}>
+                        <div className="flex h-full w-full gap-8 overflow-x-auto pb-4">
                             <AnimatePresence mode='popLayout'>
                                 {columnTitle.map((col) => (
-                                    (!isZenMode || col.status === 'doing') && (
-                                        <motion.div
-                                            key={col.status}
-                                            layout
-                                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                            className="flex-shrink-0 min-h-0 h-full"
-                                        >
-                                            <Column
-                                                columnTitle={col.name}
-                                                status={col.status}
-                                                tasks={filteredTasks.filter(task => task.status === col.status)}
-                                                deleteTask={deleteTask}
-                                                addTask={addTask}
-                                                toggleChecklist={toggleChecklist}
-                                                addSubtask={addSubtask}
-                                                onTaskClick={openTaskDetails}
-                                            />
-                                        </motion.div>
-                                    )
+                                    <motion.div
+                                        key={col.status}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        className="flex-shrink-0 min-h-0 h-full"
+                                    >
+                                        <Column
+                                            columnTitle={col.name}
+                                            status={col.status}
+                                            tasks={filteredTasks.filter(task => task.status === col.status)}
+                                            deleteTask={deleteTask}
+                                            addTask={addTask}
+                                            toggleChecklist={toggleChecklist}
+                                            addSubtask={addSubtask}
+                                            onTaskClick={openTaskDetails}
+                                        />
+                                    </motion.div>
                                 ))}
                             </AnimatePresence>
                         </div>
                     </div>
                 </div>
 
-                {/* Bottom controls */}
-                <div className="fixed bottom-8 right-8 z-[200] flex items-center gap-4">
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsZenMode(!isZenMode)}
-                        className={cn(
-                            "group flex items-center gap-3 rounded-full px-6 py-4 font-bold text-white shadow-2xl transition-all duration-300",
-                            isZenMode
-                                ? "bg-indigo-600 ring-4 ring-indigo-400/40"
-                                : "bg-slate-900 hover:bg-slate-800"
-                        )}
-                    >
-                        {isZenMode ? <EyeOff size={20} className="text-white" /> : <Eye size={20} className="text-white" />}
-                        <span className="tracking-tight">{isZenMode ? "Exit Zen" : "Zen Mode"}</span>
-                    </motion.button>
 
-                    <button
-                        onClick={() => setIsFocusMode(true)}
-                        className="flex items-center gap-3 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-2xl"
-                    >
-                        <Maximize2 size={16} />
-                        <span>Focus Mode</span>
-                    </button>
-                </div>
             </div>
 
             <TaskDetailsModal
@@ -426,6 +505,8 @@ const Board = () => {
                     </div>
                 ) : null}
             </DragOverlay>
+
+            <UndoToast />
         </DndContext>
     )
 }
