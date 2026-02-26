@@ -8,12 +8,14 @@ import { useState, useMemo } from "react";
 const STUCK_THRESHOLD = 172800000; // 48 hours in ms
 const URGENT_PULSE_THRESHOLD = 86400000; // 24 hours in ms
 
-const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: {
+const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay, isFocusMode, onClick }: {
   task: Task;
   deleteTask: (id: string) => void;
   toggleChecklist?: (taskId: string, checklistId: string) => void;
   addSubtask?: (taskId: string, text: string) => void;
   isOverlay?: boolean;
+  isFocusMode?: boolean;
+  onClick?: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
@@ -61,21 +63,35 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: 
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={(!isDragging && !isOverlay) ? { scale: 1.01, y: -2 } : {}}
       className={cn(
-        "group relative flex flex-col gap-3 rounded-2xl p-4 transition-all duration-300",
-        "glass border border-white/40",
-        isStuck && "bg-amber-50/50 border-amber-200/50 outline outline-2 outline-amber-400/20",
-        !isDragging && !isOverlay && "hover:shadow-2xl hover:border-indigo-200/50 hover:bg-white/90",
+        "group relative flex flex-col transition-all duration-300",
+        isFocusMode
+          ? "w-full max-w-2xl bg-transparent border-none p-0 items-center justify-center text-center scale-110 drop-shadow-[0_0_30px_rgba(99,102,241,0.2)]"
+          : "gap-3 rounded-2xl p-4 glass border border-white/40 shadow-slate-900/5",
+        isStuck && !isFocusMode && "bg-amber-50/50 border-amber-200/50 outline outline-2 outline-amber-400/20",
+        !isDragging && !isOverlay && !isFocusMode && "hover:shadow-2xl hover:border-indigo-200/50 hover:bg-white/90",
+        !isDragging && !isOverlay && isFocusMode && "hover:border-indigo-500/50 hover:bg-slate-900/80",
         isDragging && !isOverlay ? "opacity-0 invisible" : "opacity-100 visible",
         isOverlay ? "cursor-grabbing" : "cursor-grab"
       )}
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: !isFocusMode && task.color ? task.color : undefined,
+        borderColor: !isFocusMode && task.color ? 'rgba(0,0,0,0.05)' : undefined
+      }}
       {...listeners}
       {...attributes}
+      onClick={(e) => {
+        // Only trigger if not clicking buttons or input
+        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+        onClick?.();
+      }}
     >
-      {/* Stuck Alert Badge */}
+      {/* EVERYTHING BELOW IS CONDITIONAL FOR NON-FOCUS MODE */}
+
+      {/* Stuck Alert Badge - Hide in Focus Mode */}
       <AnimatePresence>
-        {isStuck && (
+        {isStuck && !isFocusMode && (
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -87,58 +103,75 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: 
         )}
       </AnimatePresence>
 
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-colors">
-            <GripVertical size={14} />
-          </div>
-          <div className="flex flex-col gap-1">
+      {/* Cover Image Preview */}
+      {!isFocusMode && task.coverImage && (
+        <div className="w-full h-20 rounded-xl overflow-hidden mb-3 border border-white/20 shadow-sm">
+          <img src={task.coverImage} className="w-full h-full object-cover" alt="Task preview" />
+        </div>
+      )}
+
+      <div className={cn("flex items-start justify-between", isFocusMode && "justify-center w-full")}>
+        <div className={cn("flex items-center gap-3", isFocusMode && "flex-col gap-6")}>
+          {!isFocusMode && (
+            <div className="flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-colors">
+              <GripVertical size={14} />
+            </div>
+          )}
+          <div className={cn("flex flex-col gap-1", isFocusMode && "items-center")}>
             <span className={cn(
-              "text-sm font-bold tracking-tight leading-snug",
-              isStuck ? "text-slate-800" : "text-slate-700"
+              "font-bold tracking-tight leading-loose",
+              isFocusMode
+                ? "text-5xl md:text-7xl text-white font-black drop-shadow-2xl"
+                : "text-sm text-slate-700",
+              isStuck && !isFocusMode ? "text-slate-800" : ""
             )}>
               {task.title}
             </span>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded transition-colors",
-                urgencyConfig.color
-              )}>
-                {urgencyConfig.label}
-              </span>
-              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-blue-50 text-blue-500">
-                IMPACT: {task.impact}
-              </span>
-            </div>
+
+            {!isFocusMode && (
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded transition-colors",
+                  urgencyConfig.color
+                )}>
+                  {urgencyConfig.label}
+                </span>
+                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-blue-50 text-blue-500">
+                  IMPACT: {task.impact}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
-          >
-            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteTask(task.id);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+        {!isFocusMode && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+            >
+              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteTask(task.id);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Progress Bar for Checklists */}
-      {task.checklists?.length > 0 && (
+      {/* Progress Bar for Checklists - Hide in Focus Mode */}
+      {!isFocusMode && task.checklists?.length > 0 && (
         <div className="flex flex-col gap-1.5 mt-1">
           <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
             <div className="flex items-center gap-1">
@@ -160,9 +193,9 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: 
         </div>
       )}
 
-      {/* Expanded Checklist View */}
+      {/* Expanded Checklist View - Hide in Focus Mode */}
       <AnimatePresence>
-        {isExpanded && (
+        {isExpanded && !isFocusMode && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -228,25 +261,35 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: 
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-50/50">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            <Clock size={10} />
-            <span>{Math.floor((now - task.createdAt) / 3600000)}h</span>
+      {!isFocusMode && (
+        <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-50/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <Clock size={10} />
+              <span>{Math.floor((now - task.createdAt) / 3600000)}h</span>
+            </div>
+            <div className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              task.urgency >= 5 ? "bg-red-500" :
+                task.urgency >= 3 ? "bg-indigo-400" : "bg-slate-300"
+            )} />
           </div>
-          <div className={cn(
-            "h-1.5 w-1.5 rounded-full",
-            task.urgency >= 5 ? "bg-red-500" :
-              task.urgency >= 3 ? "bg-indigo-400" : "bg-slate-300"
-          )} />
-        </div>
 
-        <div className="flex -space-x-1.5">
-          <div className="h-5 w-5 rounded-full ring-2 ring-white bg-gradient-to-tr from-slate-200 to-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500">
-            {task.title[0]}
+          <div className="flex -space-x-1.5">
+            {task.tags && task.tags.length > 0 ? (
+              <div className="flex gap-1">
+                {task.tags.slice(0, 2).map(tag => (
+                  <span key={tag} className="px-1.5 py-0.5 rounded bg-slate-100 text-[7px] font-bold text-slate-500 uppercase">{tag}</span>
+                ))}
+              </div>
+            ) : (
+              <div className="h-5 w-5 rounded-full ring-2 ring-white bg-gradient-to-tr from-slate-200 to-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500">
+                {task.title[0]}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

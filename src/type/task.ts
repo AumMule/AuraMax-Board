@@ -16,4 +16,7 @@ export interface Task {
   statusChangedAt: number;
   checklists: ChecklistItem[];
   description?: string;
+  tags?: string[];
+  coverImage?: string;
+  color?: string;
 }

@@ -14,9 +14,11 @@ type ColumnProps = {
   addTask: (title: string, status: Task["status"]) => void;
   toggleChecklist: (taskId: string, checklistId: string) => void;
   addSubtask: (taskId: string, text: string) => void;
+  isFocusMode?: boolean;
+  onTaskClick?: (task: Task) => void;
 }
 
-const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleChecklist, addSubtask }: ColumnProps) => {
+const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleChecklist, addSubtask, isFocusMode, onTaskClick }: ColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -108,6 +110,8 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
             deleteTask={deleteTask}
             toggleChecklist={toggleChecklist}
             addSubtask={addSubtask}
+            isFocusMode={isFocusMode}
+            onClick={() => onTaskClick?.(t)}
           />
         ))}
 
