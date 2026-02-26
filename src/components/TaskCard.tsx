@@ -8,16 +8,18 @@ import { useState, useMemo } from "react";
 const STUCK_THRESHOLD = 172800000; // 48 hours in ms
 const URGENT_PULSE_THRESHOLD = 86400000; // 24 hours in ms
 
-const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask }: {
+const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask, isOverlay }: {
   task: Task;
   deleteTask: (id: string) => void;
   toggleChecklist?: (taskId: string, checklistId: string) => void;
   addSubtask?: (taskId: string, text: string) => void;
+  isOverlay?: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
+    disabled: isOverlay
   });
 
   const now = Date.now();
@@ -38,17 +40,16 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask }: {
     return { label: "LOW", color: "bg-slate-100 text-slate-500" };
   }, [task.urgency]);
 
-  const style = transform ? {
+  const style = transform && !isOverlay ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    opacity: isDragging ? 0 : 1,
   } : undefined;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={isOverlay ? false : { opacity: 0, y: 10 }}
       animate={{
-        opacity: 1,
+        opacity: isDragging && !isOverlay ? 0 : 1,
         y: 0,
         boxShadow: shouldPulseUrgent
           ? ["0 0 0px rgba(239, 68, 68, 0)", "0 0 15px rgba(239, 68, 68, 0.2)", "0 0 0px rgba(239, 68, 68, 0)"]
@@ -58,13 +59,14 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask }: {
         boxShadow: shouldPulseUrgent ? { repeat: Infinity, duration: 2 } : { duration: 0.2 }
       }}
       exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={!isDragging ? { scale: 1.01, y: -2 } : {}}
+      whileHover={(!isDragging && !isOverlay) ? { scale: 1.01, y: -2 } : {}}
       className={cn(
         "group relative flex flex-col gap-3 rounded-2xl p-4 transition-all duration-300",
         "glass border border-white/40",
         isStuck && "bg-amber-50/50 border-amber-200/50 outline outline-2 outline-amber-400/20",
-        !isDragging && "hover:shadow-2xl hover:border-indigo-200/50 hover:bg-white/90",
-        isDragging ? "opacity-0 cursor-grabbing" : "cursor-grab"
+        !isDragging && !isOverlay && "hover:shadow-2xl hover:border-indigo-200/50 hover:bg-white/90",
+        isDragging && !isOverlay ? "opacity-0 invisible" : "opacity-100 visible",
+        isOverlay ? "cursor-grabbing" : "cursor-grab"
       )}
       ref={setNodeRef}
       style={style}

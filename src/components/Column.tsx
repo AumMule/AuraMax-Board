@@ -35,7 +35,7 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
       className={cn(
         "flex h-full w-[320px] lg:w-[350px] flex-col rounded-[2.5rem] p-6 transition-all duration-300",
         "bg-white/40 backdrop-blur-md border border-white/40 shadow-2xl shadow-slate-900/5",
-        isOver && "bg-indigo-50/50 ring-2 ring-indigo-400/20 scale-[1.01]"
+        isOver && "bg-indigo-50/50 ring-2 ring-inset ring-indigo-400/30 scale-[1.01] shadow-indigo-100/50"
       )}
     >
       <div className="mb-6 flex items-center justify-between px-2">

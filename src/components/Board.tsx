@@ -134,20 +134,21 @@ const Board = () => {
 
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
+
+        if (over) {
+            const taskId = active.id;
+            const newStatus = over.id as Task["status"];
+
+            setTasks((prevTasks) =>
+                prevTasks.map((task) =>
+                    task.id === taskId
+                        ? { ...task, status: newStatus, statusChangedAt: Date.now() }
+                        : task
+                )
+            );
+        }
+
         setActiveId(null);
-
-        if (!over) return;
-
-        const taskId = active.id;
-        const newStatus = over.id as Task["status"];
-
-        setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-                task.id === taskId
-                    ? { ...task, status: newStatus, statusChangedAt: Date.now() }
-                    : task
-            )
-        );
     };
 
     const activeTask = tasks.find(t => t.id === activeId);
@@ -231,7 +232,7 @@ const Board = () => {
             }}>
                 {activeId && activeTask ? (
                     <div className="scale-105 rotate-[2deg] cursor-grabbing shadow-2xl">
-                        <TaskCard task={activeTask} deleteTask={deleteTask} />
+                        <TaskCard task={activeTask} deleteTask={deleteTask} isOverlay={true} />
                     </div>
                 ) : null}
             </DragOverlay>
