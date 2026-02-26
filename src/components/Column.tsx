@@ -2,23 +2,32 @@ import TaskCard from './TaskCard';
 import { useDroppable } from "@dnd-kit/core";
 import { Plus, MoreHorizontal } from "lucide-react";
 import { cn } from "../lib/utils";
-import { motion } from 'framer-motion';
-
-type Task = {
-  id: string | number;
-  title: string;
-  status: string;
-}
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Task } from '../type/task';
+import { useState } from 'react';
 
 type ColumnProps = {
   columnTitle: string;
-  status: string;
+  status: Task["status"];
   tasks: Task[];
   deleteTask: (id: string) => void;
+  addTask: (title: string, status: Task["status"]) => void;
+  toggleChecklist: (taskId: string, checklistId: string) => void;
+  addSubtask: (taskId: string, text: string) => void;
 }
 
-const Column = ({ columnTitle, tasks, status, deleteTask }: ColumnProps) => {
+const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleChecklist, addSubtask }: ColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
+  const handleAdd = () => {
+    if (newTitle.trim()) {
+      addTask(newTitle, status);
+      setNewTitle("");
+      setIsAdding(false);
+    }
+  };
 
   return (
     <div
@@ -44,18 +53,65 @@ const Column = ({ columnTitle, tasks, status, deleteTask }: ColumnProps) => {
             {tasks.length}
           </span>
         </div>
-        <button className="rounded-xl p-2 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-all border border-transparent hover:border-white/50 shadow-sm">
-          <MoreHorizontal size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="rounded-xl p-2 text-slate-400 hover:bg-white/80 hover:text-indigo-600 transition-all border border-transparent hover:border-white/50 shadow-sm"
+          >
+            <Plus size={16} />
+          </button>
+          <button className="rounded-xl p-2 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-all border border-transparent hover:border-white/50 shadow-sm">
+            <MoreHorizontal size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Task List - Added flex-1 and overflow-y-auto to allow scrolling within the column */}
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar min-h-0">
+      <AnimatePresence>
+        {isAdding && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-4 glass p-3 rounded-2xl border border-indigo-100 shadow-lg"
+          >
+            <input
+              autoFocus
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              placeholder="What needs doing?"
+              className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 mb-2 px-1"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsAdding(false)}
+                className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase shadow-lg shadow-indigo-200"
+              >
+                Add
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar min-h-0 pt-1">
         {tasks.map((t: Task) => (
-          <TaskCard key={t.id} task={t} deleteTask={deleteTask} />
+          <TaskCard
+            key={t.id}
+            task={t}
+            deleteTask={deleteTask}
+            toggleChecklist={toggleChecklist}
+            addSubtask={addSubtask}
+          />
         ))}
 
-        {tasks.length === 0 && (
+        {tasks.length === 0 && !isAdding && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -69,13 +125,14 @@ const Column = ({ columnTitle, tasks, status, deleteTask }: ColumnProps) => {
         )}
       </div>
 
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3.5 text-[11px] font-black uppercase tracking-widest text-white shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all ring-offset-2 focus:ring-2 ring-slate-900"
+      {/* Replaced the big button at the bottom with a more subtle trigger */}
+      <button
+        onClick={() => setIsAdding(true)}
+        className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-white/50 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:bg-white shadow-sm border border-transparent hover:border-indigo-100 transition-all ring-offset-2"
       >
         <Plus size={14} />
-        Add Task
-      </motion.button>
+        New Task
+      </button>
     </div>
   )
 }

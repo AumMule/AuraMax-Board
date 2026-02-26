@@ -6,13 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import TaskCard from './TaskCard';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '../lib/utils';
-
-interface Task {
-    id: string;
-    title: string;
-    status: string;
-    priority?: 'low' | 'medium' | 'high';
-}
+import type { Task } from '../type/task';
 
 const Board = () => {
     const [tasks, setTasks] = useState<Task[]>(() => {
@@ -24,18 +18,48 @@ const Board = () => {
         } catch (error) {
             console.error("Error parsing tasks from localStorage:", error);
         }
+
+        const now = Date.now();
         return [
-            { id: "1", title: "Refactor to Glassmorphism", status: "doing", priority: 'high' },
-            { id: "2", title: "Implement Zen Mode", status: "todo", priority: 'medium' },
-            { id: "3", title: "Add AI Sub-tasks", status: "todo", priority: 'low' },
-            { id: "4", title: "Initial Project Setup", status: "done", priority: 'low' },
+            {
+                id: "1",
+                title: "Refactor to Glassmorphism",
+                status: "doing",
+                urgency: 5,
+                impact: 5,
+                createdAt: now - 86400000, // 24h ago
+                statusChangedAt: now - 3600000, // 1h ago
+                checklists: [
+                    { id: "c1", text: "Choose color palette", completed: true },
+                    { id: "c2", text: "Apply blur filters", completed: false }
+                ]
+            },
+            {
+                id: "2",
+                title: "Implement Zen Mode",
+                status: "todo",
+                urgency: 4,
+                impact: 4,
+                createdAt: now,
+                statusChangedAt: now,
+                checklists: []
+            },
+            {
+                id: "3",
+                title: "Add AI Sub-tasks",
+                status: "todo",
+                urgency: 3,
+                impact: 5,
+                createdAt: now,
+                statusChangedAt: now,
+                checklists: []
+            }
         ];
     });
 
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isZenMode, setIsZenMode] = useState(false);
 
-    // Add sensor with activation constraint to prevent accidental drags when clicking
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -48,18 +72,23 @@ const Board = () => {
         localStorage.setItem("kanban-tasks", JSON.stringify(tasks));
     }, [tasks]);
 
-    const columnTitle = [
+    const columnTitle: { name: string; status: Task["status"] }[] = [
         { name: "Focus Backlog", status: "todo" },
         { name: "In Orbit", status: "doing" },
         { name: "Architected", status: "done" }
     ];
 
-    const addTask = (title: string) => {
+    const addTask = (title: string, status: Task["status"] = "todo") => {
+        const now = Date.now();
         const newTask: Task = {
-            id: Date.now().toString(),
+            id: now.toString(),
             title,
-            status: "todo",
-            priority: 'medium'
+            status,
+            urgency: 3,
+            impact: 3,
+            createdAt: now,
+            statusChangedAt: now,
+            checklists: []
         };
         setTasks([...tasks, newTask]);
     }
@@ -67,6 +96,37 @@ const Board = () => {
     const deleteTask = (id: string) => {
         setTasks(tasks.filter(task => task.id !== id));
     }
+
+    const toggleChecklist = (taskId: string, checklistId: string) => {
+        setTasks(prev => prev.map(task => {
+            if (task.id === taskId) {
+                return {
+                    ...task,
+                    checklists: (task.checklists || []).map(item =>
+                        item.id === checklistId ? { ...item, completed: !item.completed } : item
+                    )
+                };
+            }
+            return task;
+        }));
+    };
+
+    const addSubtask = (taskId: string, text: string) => {
+        setTasks(prev => prev.map(task => {
+            if (task.id === taskId) {
+                const newSubtask = {
+                    id: Date.now().toString(),
+                    text,
+                    completed: false
+                };
+                return {
+                    ...task,
+                    checklists: [...(task.checklists || []), newSubtask]
+                };
+            }
+            return task;
+        }));
+    };
 
     const handleDragStart = (event: any) => {
         setActiveId(event.active.id);
@@ -79,12 +139,12 @@ const Board = () => {
         if (!over) return;
 
         const taskId = active.id;
-        const newStatus = over.id;
+        const newStatus = over.id as Task["status"];
 
         setTasks((prevTasks) =>
             prevTasks.map((task) =>
                 task.id === taskId
-                    ? { ...task, status: newStatus }
+                    ? { ...task, status: newStatus, statusChangedAt: Date.now() }
                     : task
             )
         );
@@ -99,7 +159,6 @@ const Board = () => {
             onDragEnd={handleDragEnd}
         >
             <div className="relative h-full w-full overflow-hidden">
-                {/* Fixed Background Layer with Blur only when in Zen Mode */}
                 <div className={cn(
                     "mesh-bg absolute inset-0 transition-all duration-700",
                     isZenMode && "blur-[10px] saturate-[0.5] scale-105"
@@ -107,10 +166,9 @@ const Board = () => {
 
                 <div className="relative z-10 flex h-full flex-col">
                     <div className="flex-shrink-0">
-                        <BoardHeader addTask={addTask} />
+                        <BoardHeader addTask={(title) => addTask(title)} />
                     </div>
 
-                    {/* Columns Area */}
                     <div className="flex flex-1 justify-center overflow-hidden px-8 pb-8 pt-2">
                         <div className={cn(
                             "flex h-full gap-8 overflow-x-auto pb-4 transition-all duration-500",
@@ -132,6 +190,9 @@ const Board = () => {
                                                 status={col.status}
                                                 tasks={tasks.filter(task => task.status === col.status)}
                                                 deleteTask={deleteTask}
+                                                addTask={addTask}
+                                                toggleChecklist={toggleChecklist}
+                                                addSubtask={addSubtask}
                                             />
                                         </motion.div>
                                     )
@@ -141,7 +202,6 @@ const Board = () => {
                     </div>
                 </div>
 
-                {/* Zen Mode Toggle - Moved outside the content area but inside the relative container to be above blur */}
                 <div className="fixed bottom-8 right-8 z-[100]">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
