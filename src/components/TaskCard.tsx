@@ -1,40 +1,53 @@
 import { useDraggable } from "@dnd-kit/core";
+import { motion } from "framer-motion";
+import { Trash2, GripVertical, Clock } from "lucide-react";
+import { cn } from "../lib/utils";
 
 type Task = {
   id: string | number;
   title: string;
+  priority?: 'low' | 'medium' | 'high';
 };
 
 const TaskCard = ({ task, deleteTask }: { task: Task; deleteTask: (id: string) => void }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
 
-  // Apply transform style so the card moves with the mouse
+  // dnd-kit handles the transform, but we only apply it if it's NOT being rendered in a DragOverlay
+  // Actually, dnd-kit recommends NOT setting transform on the original element if using DragOverlay
+  // to avoid duplication, but we need the element to stay in place (placeholder).
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 100,
+    opacity: isDragging ? 0 : 1, // Hide original when dragging (DragOverlay shows the actual card)
   } : undefined;
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={!isDragging ? { scale: 1.02, y: -2 } : {}}
+      className={cn(
+        "group relative flex flex-col gap-3 rounded-2xl p-4 transition-all duration-200",
+        "glass border border-white/40 shadow-sm",
+        !isDragging && "hover:shadow-xl hover:border-indigo-200/50 hover:bg-white/80",
+        isDragging ? "opacity-0 cursor-grabbing" : "cursor-grab"
+      )}
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      className="
-        bg-white p-4 mb-3 rounded-xl
-        border border-slate-200 
-        shadow-sm hover:shadow-md 
-        transition-shadow cursor-grab active:cursor-grabbing
-        group relative
-      "
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          {/* Aesthetic vertical accent line */}
-          <div className="w-1 h-6 bg-blue-400 rounded-full" />
-          <span className="text-slate-700 font-medium">{task.title}</span>
+          <div className="flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-colors">
+            <GripVertical size={14} />
+          </div>
+          <span className="text-sm font-bold tracking-tight text-slate-700 leading-snug">
+            {task.title}
+          </span>
         </div>
 
         <button
@@ -43,24 +56,30 @@ const TaskCard = ({ task, deleteTask }: { task: Task; deleteTask: (id: string) =
             deleteTask(task.id.toString());
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="
-            opacity-0 group-hover:opacity-100 
-            transition-opacity p-1.5 
-            hover:bg-red-50 hover:text-red-500 
-            text-slate-400 rounded-lg
-            cursor-pointer
-          "
-          title="Delete task"
+          className="rounded-lg p-1.5 text-slate-300 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          </svg>
+          <Trash2 size={14} />
         </button>
       </div>
-    </div>
+
+      <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <Clock size={10} />
+            <span>2h</span>
+          </div>
+          <div className={cn(
+            "h-1.5 w-1.5 rounded-full",
+            task.priority === 'high' ? "bg-red-500 animate-pulse" :
+              task.priority === 'medium' ? "bg-amber-400" : "bg-emerald-400"
+          )} />
+        </div>
+
+        <div className="flex -space-x-1.5">
+          <div className="h-5 w-5 rounded-full ring-2 ring-white bg-gradient-to-tr from-indigo-500 to-purple-500" />
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
