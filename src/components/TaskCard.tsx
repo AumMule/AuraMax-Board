@@ -160,7 +160,7 @@ const TaskCard = ({ task, deleteTask, toggleChecklist, addSubtask }: {
 
       {/* Expanded Checklist View */}
       <AnimatePresence>
-        {isExpanded && task.checklists?.length > 0 && (
+        {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
