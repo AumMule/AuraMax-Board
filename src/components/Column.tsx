@@ -34,35 +34,35 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
     <div
       ref={setNodeRef}
       className={cn(
-        "flex h-full w-[320px] lg:w-[350px] flex-col rounded-[2.5rem] p-6 transition-all duration-300",
-        "bg-white/40 backdrop-blur-md border border-white/40 shadow-2xl shadow-slate-900/5",
+        "flex h-full w-[300px] lg:w-[330px] flex-col rounded-2xl p-4 transition-all duration-300",
+        "bg-white/40 backdrop-blur-md border border-white/40 shadow-xl shadow-slate-900/5",
         isOver && "bg-indigo-50/50 ring-2 ring-inset ring-indigo-400/30 scale-[1.01] shadow-indigo-100/50"
       )}
     >
-      <div className="mb-6 flex items-center justify-between px-2">
-        <div className="flex items-center gap-3">
+      <div className="mb-3 flex items-center justify-between px-1">
+        <div className="flex items-center gap-2.5">
           <div className={cn(
             "h-2 w-2 rounded-full",
             status === 'todo' ? "bg-slate-400" :
               status === 'doing' ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" :
                 "bg-emerald-500"
           )} />
-          <h3 className="text-xs font-black tracking-[0.15em] text-slate-800 uppercase">
+          <h3 className="text-[10px] font-black tracking-[0.15em] text-slate-800 uppercase">
             {columnTitle}
           </h3>
-          <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-white/60 text-[10px] font-bold text-slate-500 shadow-sm border border-white/50">
+          <span className="flex h-4 w-4 items-center justify-center rounded-md bg-white/60 text-[9px] font-bold text-slate-500 shadow-sm border border-white/50">
             {tasks.length}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="rounded-xl p-2 text-slate-400 hover:bg-white/80 hover:text-indigo-600 transition-all border border-transparent hover:border-white/50 shadow-sm"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-indigo-600 transition-all"
           >
-            <Plus size={16} />
+            <Plus size={14} />
           </button>
-          <button className="rounded-xl p-2 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-all border border-transparent hover:border-white/50 shadow-sm">
-            <MoreHorizontal size={16} />
+          <button className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-all">
+            <MoreHorizontal size={14} />
           </button>
         </div>
       </div>
@@ -73,7 +73,7 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-4 glass p-3 rounded-2xl border border-indigo-100 shadow-lg"
+            className="mb-3 glass p-2.5 rounded-xl border border-indigo-100 shadow-lg"
           >
             <input
               autoFocus
@@ -81,18 +81,18 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               placeholder="What needs doing?"
-              className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 mb-2 px-1"
+              className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-700 placeholder:text-slate-400 mb-2 px-1"
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsAdding(false)}
-                className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600"
+                className="px-2.5 py-1 text-[9px] font-bold uppercase text-slate-400 hover:text-slate-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAdd}
-                className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase shadow-lg shadow-indigo-200"
+                className="px-3 py-1 bg-indigo-600 text-white rounded-md text-[9px] font-bold uppercase shadow-lg shadow-indigo-200"
               >
                 Add
               </button>
@@ -101,7 +101,7 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
         )}
       </AnimatePresence>
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar min-h-0 pt-1">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1 custom-scrollbar min-h-0 pt-0.5">
         {tasks.map((t: Task) => (
           <TaskCard
             key={t.id}
@@ -109,7 +109,6 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
             deleteTask={deleteTask}
             toggleChecklist={toggleChecklist}
             addSubtask={addSubtask}
-
             onClick={() => onTaskClick?.(t)}
           />
         ))}
@@ -118,22 +117,21 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200/40 p-10 text-center bg-slate-50/20"
+            className="flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200/40 p-6 text-center bg-slate-50/20"
           >
-            <div className="mb-3 rounded-2xl bg-white p-3 text-slate-300 shadow-sm border border-slate-100">
-              <Plus size={24} />
+            <div className="mb-2 rounded-xl bg-white p-2 text-slate-300 shadow-sm border border-slate-100">
+              <Plus size={18} />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Empty Orbit</p>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Empty Orbit</p>
           </motion.div>
         )}
       </div>
 
-      {/* Replaced the big button at the bottom with a more subtle trigger */}
       <button
         onClick={() => setIsAdding(true)}
-        className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-white/50 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:bg-white shadow-sm border border-transparent hover:border-indigo-100 transition-all ring-offset-2"
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-white/50 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:bg-white shadow-sm border border-transparent hover:border-indigo-100 transition-all"
       >
-        <Plus size={14} />
+        <Plus size={12} />
         New Task
       </button>
     </div>

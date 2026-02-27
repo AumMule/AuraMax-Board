@@ -4,7 +4,7 @@ import Column from './Column'
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { AnimatePresence, motion } from "framer-motion";
 import TaskCard from './TaskCard';
-import { Search, SlidersHorizontal, Maximize2, Minimize2, Undo2, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Maximize2, Minimize2, Undo2, X, CheckSquare, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { Task } from '../type/task';
 import TaskDetailsModal from './TaskDetailsModal';
@@ -65,6 +65,7 @@ const Board = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [focusExpandedId, setFocusExpandedId] = useState<string | null>(null);
 
     // Undo delete state
     const [deletedTask, setDeletedTask] = useState<Task | null>(null);
@@ -249,6 +250,146 @@ const Board = () => {
         </AnimatePresence>
     );
 
+    // Inline detail renderer for Focus Mode
+    const FocusTaskItem = ({ task, variant }: { task: Task; variant: 'primary' | 'secondary' | 'done' }) => {
+        const isExpanded = focusExpandedId === task.id;
+        const completedCount = task.checklists?.filter(i => i.completed).length || 0;
+        const totalCount = task.checklists?.length || 0;
+        const isOverdue = task.dueDate && task.dueDate < Date.now() && task.status !== 'done';
+
+        return (
+            <motion.div
+                layout
+                className={cn(
+                    "border-b cursor-pointer transition-colors duration-300",
+                    variant === 'primary' ? "border-white/[0.04]" :
+                        variant === 'secondary' ? "border-white/[0.03]" : "border-white/[0.02]"
+                )}
+                onClick={() => setFocusExpandedId(isExpanded ? null : task.id)}
+            >
+                {/* Title row */}
+                <div className="py-3 group">
+                    <div className="flex items-baseline gap-3">
+                        <span className={cn(
+                            "tracking-tight leading-tight transition-colors duration-300",
+                            variant === 'primary' && "text-2xl md:text-3xl font-bold text-white/90 group-hover:text-indigo-300",
+                            variant === 'secondary' && "text-lg font-medium text-white/30 group-hover:text-white/60",
+                            variant === 'done' && "text-base font-medium text-white/15 line-through decoration-white/10 group-hover:text-white/30"
+                        )}>
+                            {task.title}
+                        </span>
+                        {task.dueDate && variant === 'primary' && (
+                            <span className={cn(
+                                "text-[9px] font-bold uppercase tracking-wider flex-shrink-0",
+                                isOverdue ? "text-red-400" : "text-white/20"
+                            )}>
+                                {isOverdue ? "OVERDUE" : `${Math.ceil((task.dueDate - Date.now()) / 86400000)}d`}
+                            </span>
+                        )}
+                        {totalCount > 0 && variant !== 'done' && (
+                            <span className="text-[9px] font-bold text-white/15 flex-shrink-0">
+                                {completedCount}/{totalCount}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Expanded inline details */}
+                <AnimatePresence>
+                    {isExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="pb-5 pl-1 flex flex-col gap-4">
+                                {/* Meta row */}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <div className={cn(
+                                        "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                                        task.urgency >= 5 ? "bg-red-500/20 text-red-400" :
+                                            task.urgency >= 4 ? "bg-orange-500/20 text-orange-400" :
+                                                task.urgency >= 3 ? "bg-amber-500/20 text-amber-400" :
+                                                    "bg-white/5 text-white/30"
+                                    )}>
+                                        <AlertCircle size={8} className="inline mr-1" />
+                                        {task.urgency >= 5 ? 'Critical' : task.urgency >= 4 ? 'High' : task.urgency >= 3 ? 'Medium' : 'Low'}
+                                    </div>
+                                    <div className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[8px] font-black uppercase tracking-widest">
+                                        <TrendingUp size={8} className="inline mr-1" />
+                                        Impact {task.impact}
+                                    </div>
+                                    {task.dueDate && (
+                                        <div className={cn(
+                                            "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                                            isOverdue ? "bg-red-500/20 text-red-400" : "bg-white/5 text-white/25"
+                                        )}>
+                                            <Clock size={8} className="inline mr-1" />
+                                            {isOverdue ? 'Overdue' : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
+                                        </div>
+                                    )}
+                                    {task.tags?.map(tag => (
+                                        <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[8px] font-bold uppercase tracking-widest">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* Description */}
+                                {task.description && (
+                                    <p className="text-sm font-medium text-white/30 leading-relaxed max-w-xl">
+                                        {task.description}
+                                    </p>
+                                )}
+
+                                {/* Subtasks / Checklist */}
+                                {totalCount > 0 && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-white/20 mb-1">
+                                            <CheckSquare size={10} />
+                                            Subtasks
+                                            <span className="text-white/10">{completedCount}/{totalCount}</span>
+                                        </div>
+                                        {task.checklists?.map(item => (
+                                            <div
+                                                key={item.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleChecklist(task.id, item.id);
+                                                }}
+                                                className="flex items-center gap-2.5 py-1 px-2 rounded-lg hover:bg-white/[0.03] transition-colors cursor-pointer group/sub"
+                                            >
+                                                <div className={cn(
+                                                    "h-3.5 w-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all",
+                                                    item.completed ? "bg-indigo-500 border-indigo-500" : "border-white/15 bg-transparent"
+                                                )}>
+                                                    {item.completed && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                                                </div>
+                                                <span className={cn(
+                                                    "text-sm font-medium transition-colors",
+                                                    item.completed ? "text-white/20 line-through" : "text-white/50 group-hover/sub:text-white/70"
+                                                )}>
+                                                    {item.text}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* No details fallback */}
+                                {!task.description && totalCount === 0 && !task.dueDate && (
+                                    <p className="text-xs text-white/15 italic">No details added yet.</p>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        );
+    };
+
     // Focus Mode: completely separate fullscreen view
     if (isFocusMode) {
         const doingTasks = tasks.filter(t => t.status === 'doing');
@@ -271,31 +412,19 @@ const Board = () => {
                     Exit
                 </button>
 
-                <div className="relative z-10 max-w-3xl mx-auto px-8 py-24">
+                <div className="relative z-10 max-w-3xl mx-auto px-8 py-20">
                     {doingTasks.length > 0 && (
-                        <div className="mb-20">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-400/60 mb-8">In Orbit</p>
-                            <div className="flex flex-col gap-3">
+                        <div className="mb-16">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-400/60 mb-6">In Orbit</p>
+                            <div className="flex flex-col">
                                 {doingTasks.map((task, i) => (
                                     <motion.div
                                         key={task.id}
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: i * 0.05 }}
-                                        className="group py-4 border-b border-white/[0.04] cursor-pointer"
-                                        onClick={() => openTaskDetails(task)}
                                     >
-                                        <span className="text-3xl md:text-4xl font-bold text-white/90 tracking-tight leading-tight group-hover:text-indigo-300 transition-colors duration-300">
-                                            {task.title}
-                                        </span>
-                                        {task.dueDate && (
-                                            <span className={cn(
-                                                "ml-4 text-[10px] font-bold uppercase tracking-wider",
-                                                task.dueDate < Date.now() ? "text-red-400" : "text-white/20"
-                                            )}>
-                                                {task.dueDate < Date.now() ? "OVERDUE" : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
-                                            </span>
-                                        )}
+                                        <FocusTaskItem task={task} variant="primary" />
                                     </motion.div>
                                 ))}
                             </div>
@@ -303,21 +432,17 @@ const Board = () => {
                     )}
 
                     {todoTasks.length > 0 && (
-                        <div className="mb-20">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/20 mb-8">Backlog</p>
-                            <div className="flex flex-col gap-2">
+                        <div className="mb-16">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/20 mb-6">Backlog</p>
+                            <div className="flex flex-col">
                                 {todoTasks.map((task, i) => (
                                     <motion.div
                                         key={task.id}
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: i * 0.04 }}
-                                        className="group py-3 border-b border-white/[0.03] cursor-pointer"
-                                        onClick={() => openTaskDetails(task)}
                                     >
-                                        <span className="text-xl font-medium text-white/30 tracking-tight group-hover:text-white/60 transition-colors duration-300">
-                                            {task.title}
-                                        </span>
+                                        <FocusTaskItem task={task} variant="secondary" />
                                     </motion.div>
                                 ))}
                             </div>
@@ -325,21 +450,17 @@ const Board = () => {
                     )}
 
                     {doneTasks.length > 0 && (
-                        <div className="mb-20">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/10 mb-8">Architected</p>
-                            <div className="flex flex-col gap-2">
+                        <div className="mb-16">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/10 mb-6">Architected</p>
+                            <div className="flex flex-col">
                                 {doneTasks.map((task, i) => (
                                     <motion.div
                                         key={task.id}
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: i * 0.03 }}
-                                        className="group py-3 border-b border-white/[0.02] cursor-pointer"
-                                        onClick={() => openTaskDetails(task)}
                                     >
-                                        <span className="text-lg font-medium text-white/15 line-through decoration-white/10 tracking-tight group-hover:text-white/30 transition-colors duration-300">
-                                            {task.title}
-                                        </span>
+                                        <FocusTaskItem task={task} variant="done" />
                                     </motion.div>
                                 ))}
                             </div>
@@ -353,13 +474,6 @@ const Board = () => {
                     )}
                 </div>
 
-                <TaskDetailsModal
-                    isOpen={isModalOpen}
-                    task={selectedTask}
-                    onClose={() => setIsModalOpen(false)}
-                    onUpdate={updateTask}
-                    onDelete={deleteTask}
-                />
                 <UndoToast />
             </motion.div>
         );
@@ -381,7 +495,7 @@ const Board = () => {
                     </div>
 
                     {/* Filter & Search Bar */}
-                    <div className="flex items-center justify-between px-8 py-4">
+                    <div className="flex items-center justify-between px-6 py-2">
                         <div className="flex items-center gap-4">
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
@@ -450,8 +564,8 @@ const Board = () => {
                         </button>
                     </div>
 
-                    <div className="flex flex-1 justify-center overflow-hidden px-8 pb-8 pt-2">
-                        <div className="flex h-full w-full gap-8 overflow-x-auto pb-4">
+                    <div className="flex flex-1 justify-center overflow-hidden px-6 pb-4 pt-1">
+                        <div className="flex h-full w-full gap-5 overflow-x-auto pb-2">
                             <AnimatePresence mode='popLayout'>
                                 {columnTitle.map((col) => (
                                     <motion.div
