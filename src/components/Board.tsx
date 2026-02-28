@@ -83,6 +83,41 @@ const Board = () => {
         localStorage.setItem("kanban-tasks", JSON.stringify(tasks));
     }, [tasks]);
 
+    // ── Auto-reset: clear 'done' tasks at midnight ──────────────────────────
+    useEffect(() => {
+        const RESET_KEY = "kanban-last-reset";
+
+        const clearDone = () => {
+            const today = new Date().toDateString();
+            const lastReset = localStorage.getItem(RESET_KEY);
+            if (lastReset !== today) {
+                setTasks(prev => prev.filter(t => t.status !== 'done'));
+                localStorage.setItem(RESET_KEY, today);
+            }
+        };
+
+        // Check immediately on mount (handles missed midnights while app was closed)
+        clearDone();
+
+        // Schedule the next midnight fire
+        const scheduleMidnight = () => {
+            const now = new Date();
+            const nextMidnight = new Date();
+            nextMidnight.setHours(24, 0, 0, 0);
+            const delay = nextMidnight.getTime() - now.getTime();
+
+            return setTimeout(() => {
+                setTasks(prev => prev.filter(t => t.status !== 'done'));
+                localStorage.setItem(RESET_KEY, new Date().toDateString());
+                // Reschedule for the next midnight
+                scheduleMidnight();
+            }, delay);
+        };
+
+        const timeout = scheduleMidnight();
+        return () => clearTimeout(timeout);
+    }, []); // Runs once on mount
+
     const filteredTasks = useMemo(() => {
         return tasks.filter(task => {
             const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -145,6 +180,11 @@ const Board = () => {
         if (undoTimer) clearTimeout(undoTimer);
         setUndoTimer(null);
     }, [undoTimer]);
+
+    const clearDoneTasks = useCallback(() => {
+        setTasks(prev => prev.filter(t => t.status !== 'done'));
+        localStorage.setItem("kanban-last-reset", new Date().toDateString());
+    }, []);
 
     const updateTask = (updatedTask: Task) => {
         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
@@ -486,7 +526,7 @@ const Board = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="relative h-screen w-full overflow-hidden">
+            <div className="relative h-full w-full overflow-hidden">
                 <div className="mesh-bg absolute inset-0" />
 
                 <div className="relative z-10 flex h-full flex-col">
@@ -564,8 +604,8 @@ const Board = () => {
                         </button>
                     </div>
 
-                    <div className="flex flex-1 justify-center overflow-hidden px-6 pb-4 pt-1">
-                        <div className="flex h-full w-full gap-5 overflow-x-auto pb-2">
+                    <div className="flex flex-1 justify-center px-6 pb-4 pt-1 min-h-0">
+                        <div className="flex h-full w-full gap-5 overflow-x-auto overflow-y-hidden pb-2">
                             <AnimatePresence mode='popLayout'>
                                 {columnTitle.map((col) => (
                                     <motion.div
@@ -585,6 +625,7 @@ const Board = () => {
                                             toggleChecklist={toggleChecklist}
                                             addSubtask={addSubtask}
                                             onTaskClick={openTaskDetails}
+                                            onClear={col.status === 'done' ? clearDoneTasks : undefined}
                                         />
                                     </motion.div>
                                 ))}

@@ -1,6 +1,6 @@
 import TaskCard from './TaskCard';
 import { useDroppable } from "@dnd-kit/core";
-import { Plus, MoreHorizontal } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, Clock } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../type/task';
@@ -15,18 +15,31 @@ type ColumnProps = {
   toggleChecklist: (taskId: string, checklistId: string) => void;
   addSubtask: (taskId: string, text: string) => void;
   onTaskClick?: (task: Task) => void;
+  onClear?: () => void;
 }
 
-const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleChecklist, addSubtask, onTaskClick }: ColumnProps) => {
+const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleChecklist, addSubtask, onTaskClick, onClear }: ColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleAdd = () => {
     if (newTitle.trim()) {
       addTask(newTitle, status);
       setNewTitle("");
       setIsAdding(false);
+    }
+  };
+
+  const handleClear = () => {
+    if (showClearConfirm) {
+      onClear?.();
+      setShowClearConfirm(false);
+    } else {
+      setShowClearConfirm(true);
+      // Auto-dismiss confirm after 3s
+      setTimeout(() => setShowClearConfirm(false), 3000);
     }
   };
 
@@ -39,6 +52,7 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
         isOver && "bg-indigo-50/50 ring-2 ring-inset ring-indigo-400/30 scale-[1.01] shadow-indigo-100/50"
       )}
     >
+      {/* Column Header */}
       <div className="mb-3 flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5">
           <div className={cn(
@@ -55,6 +69,36 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
           </span>
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Clear button — only for 'done' column */}
+          {onClear && tasks.length > 0 && (
+            <AnimatePresence mode="wait">
+              {showClearConfirm ? (
+                <motion.button
+                  key="confirm"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  onClick={handleClear}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500 text-white text-[8px] font-black uppercase tracking-wider hover:bg-red-600 transition-all"
+                >
+                  <Trash2 size={10} />
+                  Confirm?
+                </motion.button>
+              ) : (
+                <motion.button
+                  key="clear"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  onClick={handleClear}
+                  title="Clear all architected tasks"
+                  className="rounded-lg p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all"
+                >
+                  <Trash2 size={13} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          )}
           <button
             onClick={() => setIsAdding(!isAdding)}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-indigo-600 transition-all"
@@ -66,6 +110,16 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
           </button>
         </div>
       </div>
+
+      {/* Midnight auto-reset badge — only for done column */}
+      {onClear && (
+        <div className="mb-2 flex items-center gap-1 px-1">
+          <Clock size={8} className="text-emerald-400/60" />
+          <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-500/50">
+            Auto-clears at midnight
+          </span>
+        </div>
+      )}
 
       <AnimatePresence>
         {isAdding && (
