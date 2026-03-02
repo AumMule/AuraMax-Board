@@ -47,7 +47,7 @@ const Column = ({ columnTitle, tasks, status, deleteTask, addTask, toggleCheckli
     <div
       ref={setNodeRef}
       className={cn(
-        "flex h-full w-[300px] lg:w-[330px] flex-col rounded-2xl p-4 transition-all duration-300",
+        "flex h-full w-[85vw] sm:w-[320px] md:w-[340px] lg:w-full flex-col rounded-2xl p-4 transition-all duration-300",
         "bg-white/40 backdrop-blur-md border border-white/40 shadow-xl shadow-slate-900/5",
         isOver && "bg-indigo-50/50 ring-2 ring-inset ring-indigo-400/30 scale-[1.01] shadow-indigo-100/50"
       )}

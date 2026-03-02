@@ -535,25 +535,25 @@ const Board = () => {
                     </div>
 
                     {/* Filter & Search Bar */}
-                    <div className="flex items-center justify-between px-6 py-2">
-                        <div className="flex items-center gap-4">
-                            <div className="relative group">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-2 gap-3 md:gap-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                            <div className="relative group w-full sm:w-auto">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
                                 <input
                                     type="text"
                                     placeholder="Search tasks..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="bg-white/40 backdrop-blur-md border border-white/40 rounded-2xl py-2.5 pl-10 pr-4 w-64 outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 ring-indigo-500/10 transition-all shadow-lg shadow-slate-900/5 focus:bg-white/80"
+                                    className="bg-white/40 backdrop-blur-md border border-white/40 rounded-2xl py-2.5 pl-10 pr-4 w-full sm:w-64 outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 ring-indigo-500/10 transition-all shadow-lg shadow-slate-900/5 focus:bg-white/80"
                                 />
                             </div>
 
                             {/* Filter Toggle */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     onClick={() => setIsFilterOpen(!isFilterOpen)}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                        "flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
                                         isFilterOpen || filterUrgency
                                             ? "bg-slate-900 text-white shadow-lg"
                                             : "bg-white/40 text-slate-400 hover:bg-white/60 border border-white/40"
@@ -572,7 +572,7 @@ const Board = () => {
                                             initial={{ opacity: 0, width: 0 }}
                                             animate={{ opacity: 1, width: 'auto' }}
                                             exit={{ opacity: 0, width: 0 }}
-                                            className="flex gap-1 overflow-hidden"
+                                            className="flex flex-wrap gap-1 overflow-hidden"
                                         >
                                             {[null, 5, 4, 3, 1].map((u) => (
                                                 <button
@@ -595,13 +595,15 @@ const Board = () => {
                         </div>
 
                         {/* Focus Mode — right side */}
-                        <button
-                            onClick={() => setIsFocusMode(true)}
-                            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-lg hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <Maximize2 size={12} />
-                            Focus
-                        </button>
+                        <div className="flex sm:justify-end">
+                            <button
+                                onClick={() => setIsFocusMode(true)}
+                                className="flex items-center justify-center gap-2 px-5 py-2 w-full sm:w-auto rounded-xl text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-lg hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Maximize2 size={12} />
+                                Focus
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex flex-1 justify-center px-6 pb-4 pt-1 min-h-0">
@@ -614,7 +616,7 @@ const Board = () => {
                                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                        className="flex-shrink-0 min-h-0 h-full"
+                                        className="flex-shrink-0 lg:flex-1 lg:min-w-[320px] lg:max-w-[480px] min-h-0 h-full"
                                     >
                                         <Column
                                             columnTitle={col.name}
