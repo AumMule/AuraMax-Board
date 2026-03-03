@@ -549,11 +549,11 @@ const Board = () => {
                             </div>
 
                             {/* Filter Toggle */}
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 md:pb-0 max-w-full w-full sm:w-auto flex-shrink-0">
                                 <button
                                     onClick={() => setIsFilterOpen(!isFilterOpen)}
                                     className={cn(
-                                        "flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                        "flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex-shrink-0",
                                         isFilterOpen || filterUrgency
                                             ? "bg-slate-900 text-white shadow-lg"
                                             : "bg-white/40 text-slate-400 hover:bg-white/60 border border-white/40"
@@ -572,22 +572,24 @@ const Board = () => {
                                             initial={{ opacity: 0, width: 0 }}
                                             animate={{ opacity: 1, width: 'auto' }}
                                             exit={{ opacity: 0, width: 0 }}
-                                            className="flex flex-wrap gap-1 overflow-hidden"
+                                            className="flex gap-1 overflow-hidden"
                                         >
-                                            {[null, 5, 4, 3, 1].map((u) => (
-                                                <button
-                                                    key={u?.toString() || 'all'}
-                                                    onClick={() => setFilterUrgency(u)}
-                                                    className={cn(
-                                                        "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                                                        filterUrgency === u
-                                                            ? "bg-indigo-600 text-white shadow-lg"
-                                                            : "bg-white/40 text-slate-400 hover:bg-white/60"
-                                                    )}
-                                                >
-                                                    {u === null ? 'All' : u === 5 ? 'Critical' : u === 4 ? 'High' : u === 3 ? 'Mid' : 'Low'}
-                                                </button>
-                                            ))}
+                                            <div className="flex items-center gap-1 min-w-max pl-1">
+                                                {[null, 5, 4, 3, 1].map((u) => (
+                                                    <button
+                                                        key={u?.toString() || 'all'}
+                                                        onClick={() => setFilterUrgency(u)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                                            filterUrgency === u
+                                                                ? "bg-indigo-600 text-white shadow-lg"
+                                                                : "bg-white/40 text-slate-400 hover:bg-white/60"
+                                                        )}
+                                                    >
+                                                        {u === null ? 'All' : u === 5 ? 'Critical' : u === 4 ? 'High' : u === 3 ? 'Mid' : 'Low'}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
