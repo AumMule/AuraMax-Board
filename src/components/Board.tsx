@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import BoardHeader from './BoardHeader'
 import Column from './Column'
-import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragOverlay, defaultDropAnimationSideEffects, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { AnimatePresence, motion } from "framer-motion";
 import TaskCard from './TaskCard';
 import { Search, SlidersHorizontal, Maximize2, Minimize2, Undo2, X, CheckSquare, Clock, AlertCircle, TrendingUp } from 'lucide-react';
@@ -72,9 +72,15 @@ const Board = () => {
     const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
                 distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
             },
         })
     );
