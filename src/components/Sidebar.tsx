@@ -6,15 +6,17 @@ import { cn } from '../lib/utils'
 type SidebarProps = {
   isOpen?: boolean;
   setIsOpen?: (isOpen: boolean) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 };
 
-const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
+const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarProps) => {
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Board', active: true },
-    { icon: Zap, label: 'Analytics', active: false },
-    { icon: Target, label: 'Goals', active: false },
-    { icon: BookOpen, label: 'Docs', active: false },
-    { icon: Settings, label: 'Settings', active: false },
+    { icon: LayoutDashboard, label: 'Board' },
+    { icon: Zap, label: 'Analytics' },
+    { icon: Target, label: 'Goals' },
+    { icon: BookOpen, label: 'Docs' },
+    { icon: Settings, label: 'Settings' },
   ]
 
   return (
@@ -40,21 +42,28 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       </div>
 
       <div className="flex-1 px-4 space-y-1 mt-4">
-        {menuItems.map((item) => (
-          <motion.div
-            key={item.label}
-            whileHover={{ x: 5 }}
-            className={cn(
-              "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 group",
-              item.active
-                ? "bg-slate-800 text-white shadow-xl shadow-slate-900/10"
-                : "text-slate-500 hover:bg-white/60 hover:text-slate-800"
-            )}
-          >
-            <item.icon size={18} className={cn(item.active ? "text-indigo-400" : "text-slate-400 group-hover:text-indigo-500")} />
-            <span className="text-sm font-bold tracking-tight">{item.label}</span>
-          </motion.div>
-        ))}
+        {menuItems.map((item) => {
+          const isActive = item.label === activeTab;
+          return (
+            <motion.div
+              key={item.label}
+              whileHover={{ x: 5 }}
+              onClick={() => {
+                setActiveTab(item.label);
+                setIsOpen?.(false);
+              }}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 group",
+                isActive
+                  ? "bg-slate-800 text-white shadow-xl shadow-slate-900/10"
+                  : "text-slate-500 hover:bg-white/60 hover:text-slate-800"
+              )}
+            >
+              <item.icon size={18} className={cn(isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-indigo-500")} />
+              <span className="text-sm font-bold tracking-tight">{item.label}</span>
+            </motion.div>
+          );
+        })}
       </div>
 
       <div className="p-6 mt-auto">

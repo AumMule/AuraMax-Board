@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import Board from './components/Board'
+import Goals from './components/Goals'
 
 import CustomCursor from './components/CustomCursor';
 
 const App = () => {
   const [username, setUsername] = useState("User");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("Board");
 
   useEffect(() => {
     const storedname = localStorage.getItem("username");
@@ -28,15 +30,21 @@ const App = () => {
         />
       )}
 
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 min-w-0">
         <Header username={username} onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* Board Container: flex-1 makes it take up all remaining height */}
-        <main className="flex-1 min-h-0 overflow-hidden">
-          <Board />
+        <main className="flex-1 min-h-0 overflow-hidden relative">
+          {activeTab === "Board" && <Board />}
+          {activeTab === "Goals" && <Goals />}
         </main>
       </div>
 
