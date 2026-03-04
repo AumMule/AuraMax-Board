@@ -134,9 +134,9 @@ const Board = () => {
     }, [tasks, searchQuery, filterUrgency]);
 
     const columnTitle: { name: string; status: Task["status"] }[] = [
-        { name: "Focus Backlog", status: "todo" },
-        { name: "In Orbit", status: "doing" },
-        { name: "Architected", status: "done" }
+        { name: "Queue", status: "todo" },
+        { name: "Active", status: "doing" },
+        { name: "Done", status: "done" }
     ];
 
     const addTask = (title: string, status: Task["status"] = "todo") => {
@@ -257,7 +257,19 @@ const Board = () => {
         setIsModalOpen(true);
     };
 
-    // Undo Toast Component
+    // Push all tasks in a column to the next status
+    const pushAllTasks = (fromStatus: Task['status']) => {
+        const nextStatus: Record<Task['status'], Task['status']> = {
+            todo: 'doing',
+            doing: 'done',
+            done: 'todo', // no-op but satisfies types
+        };
+        const next = nextStatus[fromStatus];
+        setTasks(prev => prev.map(t =>
+            t.status === fromStatus ? { ...t, status: next, statusChangedAt: Date.now() } : t
+        ));
+    };
+
     const UndoToast = () => (
         <AnimatePresence>
             {deletedTask && (
@@ -265,22 +277,21 @@ const Board = () => {
                     initial={{ opacity: 0, y: 80, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 80, scale: 0.9 }}
-                    className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-4 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-slate-900/40 border border-slate-700/50"
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-4 bg-[#1a1a1a] backdrop-blur-xl border border-white/10 text-zinc-200 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60"
                 >
-                    <span className="text-sm font-medium">
-                        <span className="text-white/50">Deleted</span>{" "}
-                        <span className="font-bold">&ldquo;{deletedTask.title}&rdquo;</span>
+                    <span className="text-sm font-medium text-zinc-400">
+                        Deleted&nbsp;<span className="font-bold text-zinc-200">&ldquo;{deletedTask.title}&rdquo;</span>
                     </span>
                     <button
                         onClick={undoDelete}
-                        className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                        className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-900/40"
                     >
                         <Undo2 size={12} />
                         Undo
                     </button>
                     <button
                         onClick={dismissUndo}
-                        className="text-white/30 hover:text-white/60 transition-colors p-1"
+                        className="text-zinc-700 hover:text-zinc-400 transition-colors p-1"
                     >
                         <X size={14} />
                     </button>
@@ -289,7 +300,7 @@ const Board = () => {
                         initial={{ scaleX: 1 }}
                         animate={{ scaleX: 0 }}
                         transition={{ duration: 5, ease: "linear" }}
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 origin-left rounded-b-2xl"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500/60 origin-left rounded-b-2xl"
                     />
                 </motion.div>
             )}
@@ -318,7 +329,7 @@ const Board = () => {
                     <div className="flex items-baseline gap-3">
                         <span className={cn(
                             "tracking-tight leading-tight transition-colors duration-300",
-                            variant === 'primary' && "text-2xl md:text-3xl font-bold text-white/90 group-hover:text-indigo-300",
+                            variant === 'primary' && "text-2xl md:text-3xl font-bold text-white/90 group-hover:text-orange-300",
                             variant === 'secondary' && "text-lg font-medium text-white/30 group-hover:text-white/60",
                             variant === 'done' && "text-base font-medium text-white/15 line-through decoration-white/10 group-hover:text-white/30"
                         )}>
@@ -358,26 +369,26 @@ const Board = () => {
                                         task.urgency >= 5 ? "bg-red-500/20 text-red-400" :
                                             task.urgency >= 4 ? "bg-orange-500/20 text-orange-400" :
                                                 task.urgency >= 3 ? "bg-amber-500/20 text-amber-400" :
-                                                    "bg-white/5 text-white/30"
+                                                    "bg-[#18181b]/5 text-white/30"
                                     )}>
                                         <AlertCircle size={8} className="inline mr-1" />
                                         {task.urgency >= 5 ? 'Critical' : task.urgency >= 4 ? 'High' : task.urgency >= 3 ? 'Medium' : 'Low'}
                                     </div>
-                                    <div className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[8px] font-black uppercase tracking-widest">
+                                    <div className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-[8px] font-black uppercase tracking-widest">
                                         <TrendingUp size={8} className="inline mr-1" />
                                         Impact {task.impact}
                                     </div>
                                     {task.dueDate && (
                                         <div className={cn(
                                             "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                            isOverdue ? "bg-red-500/20 text-red-400" : "bg-white/5 text-white/25"
+                                            isOverdue ? "bg-red-500/20 text-red-400" : "bg-[#18181b]/5 text-white/25"
                                         )}>
                                             <Clock size={8} className="inline mr-1" />
                                             {isOverdue ? 'Overdue' : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
                                         </div>
                                     )}
                                     {task.tags?.map(tag => (
-                                        <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[8px] font-bold uppercase tracking-widest">
+                                        <span key={tag} className="px-2 py-0.5 rounded-full bg-[#18181b]/5 text-white/25 text-[8px] font-bold uppercase tracking-widest">
                                             {tag}
                                         </span>
                                     ))}
@@ -405,13 +416,13 @@ const Board = () => {
                                                     e.stopPropagation();
                                                     toggleChecklist(task.id, item.id);
                                                 }}
-                                                className="flex items-center gap-2.5 py-1 px-2 rounded-lg hover:bg-white/[0.03] transition-colors cursor-pointer group/sub"
+                                                className="flex items-center gap-2.5 py-1 px-2 rounded-lg hover:bg-[#18181b]/[0.03] transition-colors cursor-pointer group/sub"
                                             >
                                                 <div className={cn(
                                                     "h-3.5 w-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all",
-                                                    item.completed ? "bg-indigo-500 border-indigo-500" : "border-white/15 bg-transparent"
+                                                    item.completed ? "bg-orange-500 border-orange-500" : "border-white/15 bg-transparent"
                                                 )}>
-                                                    {item.completed && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                                                    {item.completed && <div className="w-1.5 h-1.5 bg-[#18181b] rounded-full" />}
                                                 </div>
                                                 <span className={cn(
                                                     "text-sm font-medium transition-colors",
@@ -448,11 +459,11 @@ const Board = () => {
                 animate={{ opacity: 1 }}
                 className="fixed inset-0 z-[999] bg-[#06080c] overflow-y-auto"
             >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-orange-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
 
                 <button
                     onClick={() => setIsFocusMode(false)}
-                    className="fixed top-8 right-8 z-[1000] px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white hover:bg-white/[0.12] transition-all text-[10px] font-bold uppercase tracking-[0.2em]"
+                    className="fixed top-8 right-8 z-[1000] px-5 py-2.5 rounded-full bg-[#18181b]/[0.06] border border-white/[0.08] text-white/40 hover:text-white hover:bg-[#18181b]/[0.12] transition-all text-[10px] font-bold uppercase tracking-[0.2em]"
                 >
                     <Minimize2 size={14} className="inline mr-2" />
                     Exit
@@ -461,7 +472,7 @@ const Board = () => {
                 <div className="relative z-10 max-w-3xl mx-auto px-8 py-20">
                     {doingTasks.length > 0 && (
                         <div className="mb-16">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-400/60 mb-6">In Orbit</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400/60 mb-6">In Orbit</p>
                             <div className="flex flex-col">
                                 {doingTasks.map((task, i) => (
                                     <motion.div
@@ -537,7 +548,7 @@ const Board = () => {
 
                 <div className="relative z-10 flex h-full flex-col">
                     {/* Unified Action Bar */}
-                    <div className="flex flex-col xl:flex-row xl:items-center justify-between px-4 md:px-6 py-4 gap-3 lg:gap-4 flex-shrink-0">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between px-5 py-3 gap-3 flex-shrink-0 border-b border-white/[0.04] bg-[#0d0d0d]/60 backdrop-blur-md">
                         {/* LEFT SIDE: Summon Task Component */}
                         <div className="w-full xl:w-min">
                             <BoardHeader addTask={(title) => addTask(title)} />
@@ -547,13 +558,13 @@ const Board = () => {
                         <div className="flex flex-col md:flex-row md:items-center gap-3 lg:gap-4 w-full xl:w-auto">
                             {/* Search */}
                             <div className="relative group w-full md:w-auto">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-orange-500 transition-colors" size={14} />
                                 <input
                                     type="text"
                                     placeholder="Search tasks..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="bg-white/40 backdrop-blur-md border border-white/40 rounded-2xl py-2.5 pl-10 pr-4 w-full md:w-56 lg:w-64 outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 ring-indigo-500/10 transition-all shadow-lg shadow-slate-900/5 focus:bg-white/80"
+                                    className="bg-white/[0.04] border border-white/[0.08] rounded-xl py-2 pl-9 pr-4 w-full md:w-52 lg:w-64 outline-none text-sm font-medium text-zinc-300 placeholder:text-zinc-700 focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/20 transition-all"
                                 />
                             </div>
 
@@ -564,16 +575,16 @@ const Board = () => {
                                     <button
                                         onClick={() => setIsFilterOpen(!isFilterOpen)}
                                         className={cn(
-                                            "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex-shrink-0",
+                                            "flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex-shrink-0",
                                             isFilterOpen || filterUrgency
-                                                ? "bg-slate-900 text-white shadow-lg"
-                                                : "bg-white/40 text-slate-400 hover:bg-white/60 border border-white/40"
+                                                ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                                                : "bg-white/[0.04] text-zinc-600 hover:text-zinc-300 border border-white/[0.08]"
                                         )}
                                     >
                                         <SlidersHorizontal size={12} />
                                         Filter
                                         {filterUrgency && (
-                                            <span className="ml-1 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                                            <span className="ml-1 h-1.5 w-1.5 rounded-full bg-orange-400" />
                                         )}
                                     </button>
 
@@ -591,10 +602,10 @@ const Board = () => {
                                                             key={u?.toString() || 'all'}
                                                             onClick={() => setFilterUrgency(u)}
                                                             className={cn(
-                                                                "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                                                "px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all",
                                                                 filterUrgency === u
-                                                                    ? "bg-indigo-600 text-white shadow-lg"
-                                                                    : "bg-white/40 text-slate-400 hover:bg-white/60"
+                                                                    ? "bg-orange-500 text-white shadow-lg shadow-orange-900/30"
+                                                                    : "bg-white/[0.04] text-zinc-600 hover:text-zinc-300 border border-white/[0.06]"
                                                             )}
                                                         >
                                                             {u === null ? 'All' : u === 5 ? 'Critical' : u === 4 ? 'High' : u === 3 ? 'Mid' : 'Low'}
@@ -606,10 +617,10 @@ const Board = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* Focus Mode Header Action */}
+                                {/* Focus Mode */}
                                 <button
                                     onClick={() => setIsFocusMode(true)}
-                                    className="flex items-center justify-center gap-2 px-5 py-2.5 flex-shrink-0 rounded-xl text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-lg hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95"
+                                    className="flex items-center justify-center gap-2 px-4 py-2 flex-shrink-0 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white/[0.04] text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400 border border-white/[0.08] hover:border-orange-500/20 transition-all"
                                 >
                                     <Maximize2 size={12} />
                                     Focus
@@ -618,33 +629,32 @@ const Board = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-1 justify-center px-6 pb-4 pt-1 min-h-0">
-                        <div className="flex h-full w-full gap-5 overflow-x-auto overflow-y-hidden pb-2">
-                            <AnimatePresence mode='popLayout'>
-                                {columnTitle.map((col) => (
-                                    <motion.div
-                                        key={col.status}
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                        className="flex-shrink-0 lg:flex-1 lg:min-w-[320px] lg:max-w-[480px] min-h-0 h-full"
-                                    >
-                                        <Column
-                                            columnTitle={col.name}
-                                            status={col.status}
-                                            tasks={filteredTasks.filter(task => task.status === col.status)}
-                                            deleteTask={deleteTask}
-                                            addTask={addTask}
-                                            toggleChecklist={toggleChecklist}
-                                            addSubtask={addSubtask}
-                                            onTaskClick={openTaskDetails}
-                                            onClear={col.status === 'done' ? clearDoneTasks : undefined}
-                                        />
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                    <div className="flex flex-1 gap-5 overflow-x-auto overflow-y-hidden px-5 pb-5 pt-4 min-h-0 board-scroll">
+                        <AnimatePresence mode='popLayout'>
+                            {columnTitle.map((col) => (
+                                <motion.div
+                                    key={col.status}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                                    className="flex-shrink-0 lg:flex-1 w-[min(85vw,320px)] md:w-[320px] lg:min-w-[280px] lg:max-w-[420px] min-h-0 h-full"
+                                >
+                                    <Column
+                                        columnTitle={col.name}
+                                        status={col.status}
+                                        tasks={filteredTasks.filter(task => task.status === col.status)}
+                                        deleteTask={deleteTask}
+                                        addTask={addTask}
+                                        toggleChecklist={toggleChecklist}
+                                        addSubtask={addSubtask}
+                                        onTaskClick={openTaskDetails}
+                                        onClear={col.status === 'done' ? clearDoneTasks : undefined}
+                                        onPushAll={col.status !== 'done' ? () => pushAllTasks(col.status) : undefined}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     </div>
                 </div>
 

@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.3);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --glass-bg: rgba(24, 24, 27, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --accent-orange: #f97316;
+  --accent-purple: #a855f7;
 }
 
 /* Hide the real cursor globally */
@@ -19,49 +21,43 @@ textarea {
 
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Dark mesh background for board */
 .mesh-bg {
-  background-color: #f8fafc;
+  background-color: #0a0a0a;
   background-image:
-    radial-gradient(at 0% 0%, hsla(210, 40%, 96%, 1) 0, transparent 50%),
-    radial-gradient(at 50% 0%, hsla(225, 30%, 90%, 1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(250, 30%, 95%, 1) 0, transparent 50%);
+    radial-gradient(at 15% 25%, rgba(249, 115, 22, 0.06) 0, transparent 50%),
+    radial-gradient(at 85% 10%, rgba(168, 85, 247, 0.05) 0, transparent 40%),
+    radial-gradient(at 50% 80%, rgba(249, 115, 22, 0.03) 0, transparent 50%);
   background-attachment: fixed;
 }
 
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar — dark mode */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -69,10 +65,22 @@ textarea {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(249, 115, 22, 0.4);
+}
+
+/* For horizontal column scroll on mobile */
+.board-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.board-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.board-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
 }

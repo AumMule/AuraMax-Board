@@ -1,5 +1,5 @@
 import Account from './Account'
-import { LayoutDashboard, Settings, Zap, Target, BookOpen, X } from 'lucide-react'
+import { LayoutDashboard, Zap, Target, BookOpen, X, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '../lib/utils'
 
@@ -16,67 +16,89 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarProps) =
     { icon: Zap, label: 'Analytics' },
     { icon: Target, label: 'Goals' },
     { icon: BookOpen, label: 'Docs' },
-    { icon: Settings, label: 'Settings' },
+    { icon: Clock, label: 'Timer' },
   ]
 
   return (
     <div className={cn(
-      "fixed md:relative z-50 h-screen w-72 flex-col bg-slate-50/80 md:bg-white/40 backdrop-blur-xl border-r border-white/20 transition-transform duration-300 md:flex",
+      "fixed md:relative z-50 h-screen w-64 flex-col bg-[#0f0f0f] border-r border-white/[0.06] transition-transform duration-300 md:flex",
       isOpen ? "translate-x-0 flex" : "-translate-x-full md:translate-x-0"
     )}>
-      <div className="p-8 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-200">
-            <Zap size={18} className="text-white fill-current" />
+      {/* Logo */}
+      <div className="px-5 pt-7 pb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-900/40">
+            <Zap size={16} className="text-white fill-current" />
           </div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">NEXUS</h1>
+          <h1 className="text-[15px] font-black text-white tracking-tight">NEXUS</h1>
         </div>
-
-        {/* Mobile close button */}
         <button
           onClick={() => setIsOpen?.(false)}
-          className="md:hidden p-2 text-slate-500 hover:bg-slate-200 rounded-lg"
+          className="md:hidden p-1.5 text-zinc-600 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
       </div>
 
-      <div className="flex-1 px-4 space-y-1 mt-4">
+      {/* Date display */}
+      <div className="px-5 pb-5">
+        <p className="text-[11px] font-semibold text-zinc-600 leading-relaxed">
+          {new Date().toLocaleString('default', { weekday: 'long' })}&nbsp;
+          <span className="text-orange-500/80 font-bold">
+            {new Date().getDate()}{['st', 'nd', 'rd'][(new Date().getDate() % 10) - 1] || 'th'}
+          </span>
+          ,&nbsp;{new Date().toLocaleString('default', { month: 'long' })}
+        </p>
+      </div>
+
+      {/* Nav label */}
+      <div className="px-5 mb-2">
+        <span className="text-[9px] font-black tracking-[0.2em] text-zinc-700 uppercase">Navigation</span>
+      </div>
+
+      {/* Menu Items */}
+      <div className="flex-1 px-3 space-y-0.5">
         {menuItems.map((item) => {
           const isActive = item.label === activeTab;
           return (
-            <motion.div
+            <motion.button
               key={item.label}
-              whileHover={{ x: 5 }}
+              whileHover={{ x: isActive ? 0 : 3 }}
               onClick={() => {
                 setActiveTab(item.label);
                 setIsOpen?.(false);
               }}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 group",
+                "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group text-left",
                 isActive
-                  ? "bg-slate-800 text-white shadow-xl shadow-slate-900/10"
-                  : "text-slate-500 hover:bg-white/60 hover:text-slate-800"
+                  ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                  : "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-300"
               )}
             >
-              <item.icon size={18} className={cn(isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-indigo-500")} />
-              <span className="text-sm font-bold tracking-tight">{item.label}</span>
-            </motion.div>
+              <div className={cn(
+                "flex items-center justify-center w-7 h-7 rounded-lg transition-all",
+                isActive ? "bg-orange-500/20" : "bg-transparent group-hover:bg-white/[0.04]"
+              )}>
+                <item.icon size={15} className={cn(
+                  "transition-colors",
+                  isActive ? "text-orange-400" : "text-zinc-600 group-hover:text-zinc-300"
+                )} />
+              </div>
+              <span className={cn(
+                "text-[13px] font-semibold tracking-tight",
+                isActive ? "text-orange-300" : ""
+              )}>{item.label}</span>
+              {isActive && (
+                <div className="ml-auto w-1 h-4 bg-orange-500 rounded-full" />
+              )}
+            </motion.button>
           );
         })}
       </div>
 
-      <div className="p-6 mt-auto">
-        <div className="mb-6 flex flex-col pl-2">
-          <h2 className='text-lg font-black text-slate-800 tracking-tight leading-none'>
-            {new Date().toLocaleString('default', { month: 'long' })} <span className="text-indigo-600">.</span>
-          </h2>
-          <p className='text-xs font-semibold text-slate-500/80 mt-1'>
-            {new Date().toLocaleString('default', { weekday: 'long' })}, {new Date().getDate()}{['st', 'nd', 'rd'][(new Date().getDate() % 10) - 1] || 'th'} {new Date().getFullYear()}
-          </p>
-        </div>
-
-        <div className="bg-slate-900 flex items-center gap-3 w-full p-3 rounded-2xl text-white shadow-2xl transition-transform hover:scale-[1.02] cursor-pointer">
+      {/* Account section */}
+      <div className="p-4 border-t border-white/[0.05]">
+        <div className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] flex items-center gap-3 w-full p-3 rounded-2xl text-white transition-all duration-200 cursor-pointer">
           <Account />
         </div>
       </div>

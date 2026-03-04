@@ -4,6 +4,8 @@ import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import Board from './components/Board'
 import Goals from './components/Goals'
+import FocusTimer from './components/FocusTimer'
+import Analytics from './components/Analytics'
 
 import CustomCursor from './components/CustomCursor';
 
@@ -19,13 +21,13 @@ const App = () => {
 
   return (
     // Fixed: h-screen and overflow-hidden prevent the whole page from scrolling
-    <div className="flex w-screen h-screen bg-slate-50 font-sans overflow-hidden">
+    <div className="flex w-screen h-screen bg-[#0a0a0a] font-sans overflow-hidden">
       <CustomCursor />
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -44,7 +46,9 @@ const App = () => {
         {/* Board Container: flex-1 makes it take up all remaining height */}
         <main className="flex-1 min-h-0 overflow-hidden relative">
           {activeTab === "Board" && <Board />}
+          {activeTab === "Analytics" && <Analytics />}
           {activeTab === "Goals" && <Goals />}
+          {activeTab === "Timer" && <FocusTimer />}
         </main>
       </div>
 

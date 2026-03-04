@@ -4,13 +4,15 @@ import { motion, useSpring, useMotionValue } from 'framer-motion';
 const CustomCursor: FC = () => {
   const [isPointer, setIsPointer] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
+  const [isText, setIsText] = useState(false);
 
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
 
-  const springConfig = { damping: 25, stiffness: 250 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
+  // Slower, heavier ring for the trailing aura
+  const ringConfig = { damping: 30, stiffness: 200 };
+  const ringX = useSpring(cursorX, ringConfig);
+  const ringY = useSpring(cursorY, ringConfig);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -19,12 +21,9 @@ const CustomCursor: FC = () => {
 
       const target = e.target as HTMLElement | null;
       if (target) {
-        const computedCursor = window.getComputedStyle(target).cursor;
-        setIsPointer(
-          computedCursor === 'pointer' ||
-          computedCursor === 'grab' ||
-          computedCursor === 'grabbing'
-        );
+        const computed = window.getComputedStyle(target).cursor;
+        setIsPointer(computed === 'pointer' || computed === 'grab' || computed === 'grabbing');
+        setIsText(computed === 'text');
       }
     };
 
@@ -44,35 +43,70 @@ const CustomCursor: FC = () => {
 
   return (
     <>
-      {/* Outer Ring */}
+      {/* Aura ring — trails slightly behind */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-indigo-500/50 pointer-events-none z-[9999] flex items-center justify-center bg-indigo-500/5 backdrop-blur-[2px]"
+        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full"
         style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
-          translateX: "-50%",
-          translateY: "-50%",
-          scale: isPointer ? 1.5 : 1,
+          x: ringX,
+          y: ringY,
+          translateX: '-50%',
+          translateY: '-50%',
         }}
         animate={{
-          scale: isClicking ? 0.8 : (isPointer ? 1.5 : 1),
-          borderColor: isPointer ? "rgba(99, 102, 241, 0.8)" : "rgba(99, 102, 241, 0.4)",
+          width: isPointer ? 40 : isClicking ? 20 : 28,
+          height: isPointer ? 40 : isClicking ? 20 : 28,
+          backgroundColor: isPointer
+            ? 'rgba(249, 115, 22, 0.08)'
+            : 'transparent',
+          border: isPointer
+            ? '1.5px solid rgba(249, 115, 22, 0.5)'
+            : isText
+              ? '1.5px solid rgba(255,255,255,0.2)'
+              : '1.5px solid rgba(255, 255, 255, 0.15)',
+          scale: isClicking ? 0.8 : 1,
         }}
+        transition={{ type: 'spring', damping: 28, stiffness: 220 }}
       />
 
-      {/* Inner Dot */}
+      {/* Sharp center dot — snaps instantly */}
       <motion.div
-        className="fixed top-0 left-0 w-1.5 h-1.5 bg-indigo-600 rounded-full pointer-events-none z-[9999]"
+        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full"
         style={{
           x: cursorX,
           y: cursorY,
-          translateX: "-50%",
-          translateY: "-50%",
+          translateX: '-50%',
+          translateY: '-50%',
         }}
         animate={{
-          scale: isPointer ? 0 : 1,
+          width: isText ? 2 : isPointer ? 0 : 4,
+          height: isText ? 16 : isPointer ? 0 : 4,
+          backgroundColor: isPointer
+            ? 'transparent'
+            : isText
+              ? 'rgba(255,255,255,0.5)'
+              : '#f97316',
+          borderRadius: isText ? '1px' : '50%',
+          opacity: isClicking ? 0.6 : 1,
+          scale: isClicking ? 0.6 : 1,
         }}
+        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
       />
+
+      {/* Click ripple */}
+      {isClicking && (
+        <motion.div
+          className="fixed top-0 left-0 pointer-events-none z-[9998] rounded-full border border-orange-500/30"
+          style={{
+            x: cursorX,
+            y: cursorY,
+            translateX: '-50%',
+            translateY: '-50%',
+          }}
+          initial={{ width: 8, height: 8, opacity: 0.6 }}
+          animate={{ width: 40, height: 40, opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      )}
     </>
   );
 };

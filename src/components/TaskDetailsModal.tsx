@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Calendar, Tag, AlertCircle, TrendingUp, AlignLeft, Image as ImageIcon, Clock } from "lucide-react";
+import { X, Trash2, Calendar, Tag, AlertCircle, TrendingUp, AlignLeft, Image as ImageIcon, Clock, CheckSquare } from "lucide-react";
 import type { Task } from "../type/task";
 import { useState, useEffect } from "react";
 import { cn } from "../lib/utils";
@@ -29,147 +29,193 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
     };
 
     const urgencyOptions = [
-        { value: 1, label: "Low", color: "bg-slate-100 text-slate-600" },
-        { value: 3, label: "Medium", color: "bg-amber-100 text-amber-600" },
-        { value: 4, label: "High", color: "bg-orange-100 text-orange-600" },
-        { value: 5, label: "Critical", color: "bg-red-500 text-white" },
+        { value: 1, label: "Low", activeClass: "bg-zinc-700 text-zinc-200 border-zinc-600" },
+        { value: 3, label: "Medium", activeClass: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+        { value: 4, label: "High", activeClass: "bg-orange-500/20 text-orange-400 border-orange-500/40" },
+        { value: 5, label: "Critical", activeClass: "bg-red-500/20 text-red-400 border-red-500/40" },
     ];
 
     const cardColors = [
-        { name: "Default", value: "" },
-        { name: "Ice", value: "#dbeafe" },
-        { name: "Mint", value: "#d1fae5" },
-        { name: "Peach", value: "#fecdd3" },
-        { name: "Honey", value: "#fde68a" },
-        { name: "Lavender", value: "#e9d5ff" },
-        { name: "Sky", value: "#bae6fd" },
-        { name: "Coral", value: "#fda4af" },
+        { name: "None", value: "" },
+        { name: "Ocean", value: "#1e3a5f" },
+        { name: "Forest", value: "#1a3a2a" },
+        { name: "Ember", value: "#3d1f0f" },
+        { name: "Dusk", value: "#2d1a3d" },
+        { name: "Slate", value: "#1a2035" },
+        { name: "Rose", value: "#3d1a24" },
+        { name: "Gold", value: "#332200" },
     ];
 
-    // Helper: format timestamp to YYYY-MM-DD for input[type=date]
     const formatDateForInput = (timestamp?: number) => {
         if (!timestamp) return "";
-        const d = new Date(timestamp);
-        return d.toISOString().split("T")[0];
+        return new Date(timestamp).toISOString().split("T")[0];
     };
 
     const isOverdue = editTask.dueDate && editTask.dueDate < Date.now() && editTask.status !== 'done';
+    const now = Date.now();
+    const timeInStatus = now - editTask.statusChangedAt;
+    const statusLabel = editTask.status === 'doing' ? 'In Orbit' : editTask.status === 'todo' ? 'Backlog' : 'Done';
+    const completedCount = editTask.checklists?.filter(i => i.completed).length || 0;
+    const totalCount = editTask.checklists?.length || 0;
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
                     />
+
+                    {/* Modal */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                        className="relative w-full max-w-2xl bg-white/95 backdrop-blur-3xl border border-white/50 rounded-[3rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] overflow-hidden"
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                        className="relative w-full max-w-xl bg-[#111111] border border-white/[0.08] rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col max-h-[90vh]"
                     >
-                        {/* Header with optional cover bg */}
-                        <div className="relative overflow-hidden">
-                            {/* Clear cover image background */}
+                        {/* Header section */}
+                        <div className="relative overflow-hidden flex-shrink-0">
+                            {/* Subtle gradient background based on urgency */}
+                            <div className={cn(
+                                "absolute inset-0",
+                                editTask.urgency >= 5
+                                    ? "bg-gradient-to-br from-red-950/40 via-transparent to-transparent"
+                                    : editTask.urgency >= 4
+                                        ? "bg-gradient-to-br from-orange-950/40 via-transparent to-transparent"
+                                        : "bg-gradient-to-br from-zinc-900/60 via-transparent to-transparent"
+                            )} />
+
+                            {/* Cover image if present */}
                             {editTask.coverImage && (
                                 <>
                                     <img
                                         src={editTask.coverImage}
-                                        className="absolute inset-0 w-full h-full object-cover"
+                                        className="absolute inset-0 w-full h-full object-cover opacity-25"
                                         alt=""
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-white" />
+                                    <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-[#111111]" />
                                 </>
-                            )}
-                            {/* Fallback gradient when no image */}
-                            {!editTask.coverImage && (
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50" />
                             )}
 
                             {/* Close button */}
                             <button
                                 onClick={onClose}
-                                className={cn(
-                                    "absolute top-6 right-6 z-20 p-2 rounded-full transition-all shadow-xl hover:scale-110",
-                                    editTask.coverImage
-                                        ? "bg-white/10 backdrop-blur-md text-white hover:bg-white/90 hover:text-slate-800"
-                                        : "bg-white/80 text-slate-400 hover:text-slate-800"
-                                )}
+                                className="absolute top-4 right-4 z-20 p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-500 hover:text-zinc-200 transition-all"
                             >
-                                <X size={20} />
+                                <X size={16} />
                             </button>
 
                             {/* Remove cover button */}
                             {editTask.coverImage && (
                                 <button
                                     onClick={() => setEditTask({ ...editTask, coverImage: "" })}
-                                    className="absolute top-6 left-6 z-20 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white/60 hover:text-white hover:bg-red-500/80 transition-all text-[9px] font-bold uppercase tracking-widest"
+                                    className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all text-[10px] font-bold uppercase tracking-widest border border-white/[0.06]"
                                 >
                                     Remove Cover
                                 </button>
                             )}
 
-                            {/* Title & metadata overlaid */}
-                            <div className="relative z-10 p-8 md:p-12 pb-8">
+                            {/* Title + meta */}
+                            <div className="relative z-10 px-6 pt-6 pb-5">
                                 <input
                                     type="text"
                                     value={editTask.title}
                                     onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
                                     placeholder="Task Title"
-                                    className={cn(
-                                        "text-4xl font-black bg-transparent border-none outline-none placeholder:text-slate-200 w-full tracking-tight",
-                                        editTask.coverImage ? "text-white drop-shadow-lg" : "text-slate-900"
-                                    )}
+                                    className="text-2xl font-black bg-transparent border-none outline-none placeholder:text-zinc-700 w-full tracking-tight text-white mb-3"
                                 />
-                                <div className="flex items-center gap-3 flex-wrap mt-3">
-                                    <div className={cn(
-                                        "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
-                                        editTask.coverImage ? "bg-white/15 text-white/70 backdrop-blur-sm" : "bg-slate-100/80 text-slate-400"
+
+                                {/* Status chips row */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Status badge */}
+                                    <span className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border",
+                                        editTask.status === 'doing'
+                                            ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
+                                            : editTask.status === 'done'
+                                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                                : "bg-zinc-800 text-zinc-500 border-zinc-700/50"
                                     )}>
-                                        <Calendar size={12} className={editTask.coverImage ? "text-white/70" : "text-indigo-500"} />
-                                        Created {new Date(editTask.createdAt).toLocaleDateString()}
-                                    </div>
-                                    <div className={cn(
-                                        "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
-                                        editTask.coverImage ? "bg-white/15 text-white/70 backdrop-blur-sm" : "bg-slate-100/80 text-slate-400"
-                                    )}>
-                                        <Tag size={12} className={editTask.coverImage ? "text-white/70" : "text-emerald-500"} />
-                                        {editTask.status}
-                                    </div>
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full",
+                                            editTask.status === 'doing' ? "bg-orange-400" : editTask.status === 'done' ? "bg-emerald-400" : "bg-zinc-600"
+                                        )} />
+                                        {statusLabel}
+                                    </span>
+
+                                    {/* Created */}
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-white/[0.03] text-zinc-600 border border-white/[0.05]">
+                                        <Calendar size={10} className="text-zinc-600" />
+                                        {new Date(editTask.createdAt).toLocaleDateString()}
+                                    </span>
+
+                                    {/* Active time for doing tasks */}
+                                    {editTask.status === 'doing' && (
+                                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                            <Clock size={10} />
+                                            {Math.floor(timeInStatus / 3600000) > 0
+                                                ? `${Math.floor(timeInStatus / 3600000)}h ${Math.floor((timeInStatus % 3600000) / 60000)}m active`
+                                                : `${Math.floor(timeInStatus / 60000)}m active`
+                                            }
+                                        </span>
+                                    )}
+
                                     {isOverdue && (
-                                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-red-500/80 text-white px-2.5 py-1 rounded-full animate-pulse backdrop-blur-sm">
-                                            <AlertCircle size={12} />
+                                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black bg-red-500/15 text-red-400 border border-red-500/20 animate-pulse">
+                                            <AlertCircle size={10} />
                                             Overdue
-                                        </div>
+                                        </span>
                                     )}
                                 </div>
+
+                                {/* Checklist mini-progress */}
+                                {totalCount > 0 && (
+                                    <div className="mt-3 flex items-center gap-3">
+                                        <div className="flex-1 h-[2px] bg-white/[0.06] rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500"
+                                                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-[10px] font-bold text-zinc-600 flex items-center gap-1 flex-shrink-0">
+                                            <CheckSquare size={10} />
+                                            {completedCount}/{totalCount}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="p-8 md:p-12 pt-6 flex flex-col gap-10 max-h-[55vh] overflow-y-auto custom-scrollbar">
-                            {/* Cover Image URL — compact inline */}
+                        {/* Divider */}
+                        <div className="h-px bg-white/[0.05] flex-shrink-0" />
+
+                        {/* Scrollable body */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-6">
+                            {/* Cover Image URL */}
                             <div className="flex items-center gap-3">
-                                <ImageIcon size={14} className="text-slate-300 flex-shrink-0" />
+                                <ImageIcon size={13} className="text-zinc-700 flex-shrink-0" />
                                 <input
                                     type="text"
                                     value={editTask.coverImage || ""}
                                     onChange={(e) => setEditTask({ ...editTask, coverImage: e.target.value })}
                                     placeholder="Paste cover image URL..."
-                                    className="flex-1 bg-transparent border-b border-dashed border-slate-200 px-1 py-1.5 text-xs font-medium text-slate-500 outline-none focus:border-indigo-400 transition-colors placeholder:text-slate-300"
+                                    className="flex-1 bg-transparent border-b border-dashed border-white/[0.08] px-1 py-1.5 text-xs font-medium text-zinc-500 outline-none focus:border-orange-500/40 transition-colors placeholder:text-zinc-800"
                                 />
                             </div>
 
                             {/* Due Date */}
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center gap-2 text-slate-800">
-                                    <Clock size={16} className="text-rose-500" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Due Date</span>
+                            <div className="flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={13} className="text-rose-500/70" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Due Date</span>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
                                     <input
                                         type="date"
                                         value={formatDateForInput(editTask.dueDate)}
@@ -181,49 +227,53 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
                                             });
                                         }}
                                         className={cn(
-                                            "bg-slate-50/50 border rounded-2xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 ring-indigo-500/10 transition-all cursor-pointer",
-                                            isOverdue ? "border-red-200 text-red-600 bg-red-50/50" : "border-slate-100 text-slate-600"
+                                            "bg-white/[0.04] border rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:ring-1 ring-orange-500/20 transition-all",
+                                            isOverdue
+                                                ? "border-red-500/30 text-red-400 bg-red-500/5"
+                                                : "border-white/[0.08] text-zinc-400"
                                         )}
                                     />
                                     {editTask.dueDate && (
-                                        <button
-                                            onClick={() => setEditTask({ ...editTask, dueDate: undefined })}
-                                            className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors"
-                                        >
-                                            Clear
-                                        </button>
-                                    )}
-                                    {editTask.dueDate && !isOverdue && (
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                            {Math.ceil((editTask.dueDate - Date.now()) / 86400000)} days left
-                                        </span>
+                                        <>
+                                            <button
+                                                onClick={() => setEditTask({ ...editTask, dueDate: undefined })}
+                                                className="text-[10px] font-bold uppercase tracking-widest text-zinc-700 hover:text-red-400 transition-colors"
+                                            >
+                                                Clear
+                                            </button>
+                                            {!isOverdue && (
+                                                <span className="text-[10px] font-bold text-zinc-600">
+                                                    {Math.ceil((editTask.dueDate - now) / 86400000)} days left
+                                                </span>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Color Selector Section */}
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center gap-2 text-slate-800">
-                                    <div className="h-4 w-1 bg-indigo-500 rounded-full" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Card Theme</span>
+                            {/* Card Color */}
+                            <div className="flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-1 bg-orange-500 rounded-full" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Card Color</span>
                                 </div>
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-2">
                                     {cardColors.map((color) => (
                                         <button
                                             key={color.name}
                                             onClick={() => setEditTask({ ...editTask, color: color.value })}
                                             title={color.name}
                                             className={cn(
-                                                "w-10 h-10 rounded-2xl border-2 transition-all hover:scale-110 relative",
+                                                "w-8 h-8 rounded-xl border-2 transition-all hover:scale-110 relative",
                                                 editTask.color === color.value
-                                                    ? "border-slate-900 shadow-xl scale-110"
-                                                    : "border-slate-100 hover:border-slate-200"
+                                                    ? "border-orange-500 scale-110 shadow-lg shadow-orange-900/30"
+                                                    : "border-white/[0.08] hover:border-white/20"
                                             )}
-                                            style={{ backgroundColor: color.value || '#ffffff' }}
+                                            style={{ backgroundColor: color.value || '#1a1a1a' }}
                                         >
                                             {editTask.color === color.value && (
-                                                <motion.div layoutId="colorActive" className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                                                <motion.div layoutId="colorDot" className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-white/60" />
                                                 </motion.div>
                                             )}
                                         </button>
@@ -231,30 +281,30 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
                                 </div>
                             </div>
 
-                            {/* Tags Section */}
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2 text-slate-800">
-                                    <Tag size={16} className="text-emerald-500" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Category Tags</span>
+                            {/* Tags */}
+                            <div className="flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2">
+                                    <Tag size={13} className="text-purple-400/70" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tags</span>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2 items-center">
                                     {editTask.tags?.map((tag) => (
                                         <span
                                             key={tag}
-                                            className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-100"
+                                            className="px-2.5 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-[10px] font-bold border border-purple-500/20 flex items-center gap-1.5"
                                         >
                                             {tag}
                                             <button
                                                 onClick={() => setEditTask({ ...editTask, tags: editTask.tags?.filter(t => t !== tag) })}
-                                                className="hover:text-red-500 transition-colors"
+                                                className="hover:text-red-400 transition-colors"
                                             >
-                                                <X size={10} />
+                                                <X size={9} />
                                             </button>
                                         </span>
                                     ))}
                                     <input
                                         type="text"
-                                        placeholder="+ New Tag"
+                                        placeholder="+ Tag"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 const val = (e.target as HTMLInputElement).value.trim();
@@ -264,42 +314,43 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
                                                 }
                                             }
                                         }}
-                                        className="bg-transparent border-b border-dashed border-slate-300 px-2 py-1 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-indigo-500 transition-colors w-24"
+                                        className="bg-transparent border-b border-dashed border-white/[0.08] px-2 py-1 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-purple-500/40 transition-colors text-zinc-600 placeholder:text-zinc-800 w-20"
                                     />
                                 </div>
                             </div>
 
                             {/* Description */}
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2 text-slate-800">
-                                    <AlignLeft size={16} className="text-indigo-500" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Description</span>
+                            <div className="flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2">
+                                    <AlignLeft size={13} className="text-orange-500/70" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Description</span>
                                 </div>
                                 <textarea
                                     value={editTask.description || ""}
                                     onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-                                    placeholder="What is this task about? Add some context..."
-                                    className="w-full h-32 bg-slate-50/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none focus:ring-2 ring-indigo-500/10 border border-slate-100 transition-all resize-none"
+                                    placeholder="Add context, notes, or details about this task..."
+                                    className="w-full h-28 bg-white/[0.03] rounded-xl p-4 text-sm font-medium text-zinc-400 outline-none focus:ring-1 ring-orange-500/20 border border-white/[0.06] focus:border-orange-500/20 transition-all resize-none placeholder:text-zinc-800"
                                 />
                             </div>
 
-                            {/* Urgency & Impact */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-2 text-slate-800">
-                                        <AlertCircle size={16} className="text-orange-500" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Urgency</span>
+                            {/* Urgency + Impact */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Urgency */}
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle size={13} className="text-orange-500/70" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Urgency</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-1.5">
                                         {urgencyOptions.map((opt) => (
                                             <button
                                                 key={opt.value}
                                                 onClick={() => setEditTask({ ...editTask, urgency: opt.value })}
                                                 className={cn(
-                                                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                                                    "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border",
                                                     editTask.urgency === opt.value
-                                                        ? opt.color + " shadow-lg"
-                                                        : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                                        ? opt.activeClass
+                                                        : "bg-white/[0.03] text-zinc-700 border-white/[0.05] hover:text-zinc-400 hover:bg-white/[0.05]"
                                                 )}
                                             >
                                                 {opt.label}
@@ -308,12 +359,13 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-2 text-slate-800">
-                                        <TrendingUp size={16} className="text-blue-500" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Impact Factor</span>
+                                {/* Impact */}
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp size={13} className="text-purple-400/70" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Impact</span>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                         <input
                                             type="range"
                                             min="1"
@@ -321,36 +373,39 @@ const TaskDetailsModal = ({ task, isOpen, onClose, onUpdate, onDelete }: TaskDet
                                             step="1"
                                             value={editTask.impact}
                                             onChange={(e) => setEditTask({ ...editTask, impact: parseInt(e.target.value) })}
-                                            className="flex-1 accent-indigo-500 cursor-pointer"
+                                            className="flex-1 accent-purple-500 cursor-pointer"
                                         />
-                                        <span className="text-xl font-black text-indigo-600 w-4">{editTask.impact}</span>
+                                        <span className="text-lg font-black text-purple-400 w-5 text-center">{editTask.impact}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[8px] text-zinc-800 font-medium px-0.5">
+                                        <span>Low</span><span>High</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="p-8 md:px-10 py-6 bg-slate-50/80 border-t border-white/20 flex items-center justify-between">
+                        <div className="flex-shrink-0 px-6 py-4 bg-[#0d0d0d] border-t border-white/[0.05] flex items-center justify-between">
                             <button
                                 onClick={() => { onDelete(editTask.id); onClose(); }}
-                                className="flex items-center gap-2 text-red-400 hover:text-red-500 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors"
+                                className="flex items-center gap-2 text-zinc-700 hover:text-red-400 text-[10px] font-bold uppercase tracking-wider transition-colors"
                             >
-                                <Trash2 size={14} />
-                                Terminate Task
+                                <Trash2 size={13} />
+                                Delete
                             </button>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
                                 <button
                                     onClick={onClose}
-                                    className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors"
                                 >
                                     Discard
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 hover:bg-indigo-600 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    className="px-6 py-2.5 bg-orange-500 hover:bg-orange-400 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    Save Changes
+                                    Save
                                 </button>
                             </div>
                         </div>
