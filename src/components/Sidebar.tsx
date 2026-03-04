@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         </button>
       </div>
 
-      <div className="flex-1 px-4 space-y-1">
+      <div className="flex-1 px-4 space-y-1 mt-4">
         {menuItems.map((item) => (
           <motion.div
             key={item.label}
@@ -58,6 +58,15 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       </div>
 
       <div className="p-6 mt-auto">
+        <div className="mb-6 flex flex-col pl-2">
+          <h2 className='text-lg font-black text-slate-800 tracking-tight leading-none'>
+            {new Date().toLocaleString('default', { month: 'long' })} <span className="text-indigo-600">.</span>
+          </h2>
+          <p className='text-xs font-semibold text-slate-500/80 mt-1'>
+            {new Date().toLocaleString('default', { weekday: 'long' })}, {new Date().getDate()}{['st', 'nd', 'rd'][(new Date().getDate() % 10) - 1] || 'th'} {new Date().getFullYear()}
+          </p>
+        </div>
+
         <div className="bg-slate-900 flex items-center gap-3 w-full p-3 rounded-2xl text-white shadow-2xl transition-transform hover:scale-[1.02] cursor-pointer">
           <Account />
         </div>

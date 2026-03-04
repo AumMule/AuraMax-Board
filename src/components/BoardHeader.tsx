@@ -15,30 +15,9 @@ const BoardHeader = ({ addTask }: BoardHeaderProps) => {
     setTitle("");
   };
 
-  const today = new Date();
-  const month = today.toLocaleString('default', { month: 'long' });
-  const day = today.getDate();
-  const weekday = today.toLocaleString('default', { weekday: 'long' });
-
   return (
     <div className="w-full px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <motion.div
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className='flex items-center gap-4'
-      >
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-0.5">
-            <Calendar size={12} className="text-indigo-500" />
-            <p className='text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400'>Workspace Sync</p>
-          </div>
-          <h2 className='text-xl font-black text-slate-800 tracking-tight leading-none'>
-            {month} <span className="text-indigo-600">.</span>
-          </h2>
-          <p className='text-[10px] font-semibold text-slate-500/80 mt-0.5'>{weekday}, {day}th {today.getFullYear()}</p>
-        </div>
-      </motion.div>
-
+      {/* Search Input Container */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
