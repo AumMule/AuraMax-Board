@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, FileText, CheckCircle, Flame, ArrowRight, BrainCircuit } from 'lucide-react';
+import { Sparkles, FileText, CheckCircle, Flame, ArrowRight, BrainCircuit, Send } from 'lucide-react';
+import type { Task } from '../type/task';
 
 type DayPlan = {
     id: string;
@@ -10,8 +11,19 @@ type DayPlan = {
 
 const Goals = () => {
     const [syllabusText, setSyllabusText] = useState("");
-    const [plans, setPlans] = useState<DayPlan[]>([]);
+    const [plans, setPlans] = useState<DayPlan[]>(() => {
+        try {
+            const saved = localStorage.getItem("goals-plans");
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
     const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem("goals-plans", JSON.stringify(plans));
+    }, [plans]);
 
     const generatePlan = () => {
         if (!syllabusText.trim()) return;
@@ -48,6 +60,40 @@ const Goals = () => {
             setPlans(parsedPlans);
             setIsGenerating(false);
         }, 800);
+    };
+
+    const sendToBoard = (plan: DayPlan) => {
+        const existingTasksStr = localStorage.getItem("kanban-tasks");
+        const existingTasks: Task[] = existingTasksStr ? JSON.parse(existingTasksStr) : [];
+        const now = Date.now();
+
+        const newTasks: Task[] = [];
+        let timeOffset = 0;
+
+        plan.items.forEach(item => {
+            if (item.startsWith("---") && item.endsWith("---")) return; // skip section headers
+            newTasks.push({
+                id: (now + timeOffset).toString(),
+                title: item,
+                status: "todo",
+                urgency: 3,
+                impact: 3,
+                createdAt: now + timeOffset,
+                statusChangedAt: now + timeOffset,
+                checklists: [],
+                tags: [plan.title]
+            });
+            timeOffset++;
+        });
+
+        localStorage.setItem("kanban-tasks", JSON.stringify([...existingTasks, ...newTasks]));
+        // Simple visual confirmation for user
+        const btn = document.getElementById(`send-btn-${plan.id}`);
+        if (btn) {
+            const oldHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="text-[9px] font-black uppercase tracking-widest text-emerald-600">Sent!</span>';
+            setTimeout(() => btn.innerHTML = oldHtml, 2000);
+        }
     };
 
     return (
@@ -124,15 +170,15 @@ const Goals = () => {
                                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         transition={{ delay: i * 0.1 }}
-                                        className="bg-white/60 backdrop-blur-xl border border-white/40 p-6 rounded-3xl shadow-xl shadow-slate-900/5 hover:shadow-2xl transition-all"
+                                        className="h-[420px] flex flex-col bg-white/60 backdrop-blur-xl border border-white/40 p-6 rounded-3xl shadow-xl shadow-slate-900/5 hover:shadow-2xl transition-all"
                                     >
-                                        <h3 className="text-lg font-black text-slate-800 mb-4 pb-3 border-b border-slate-200/50 flex items-center gap-2">
+                                        <h3 className="text-lg font-black text-slate-800 mb-4 pb-3 border-b border-slate-200/50 flex items-center gap-2 flex-shrink-0">
                                             <span className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
                                                 <ArrowRight size={14} />
                                             </span>
                                             {plan.title}
                                         </h3>
-                                        <div className="space-y-3">
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
                                             {plan.items.map((item, idx) => {
                                                 if (item.startsWith('---') && item.endsWith('---')) {
                                                     return (
@@ -154,6 +200,18 @@ const Goals = () => {
                                                     </div>
                                                 )
                                             })}
+                                        </div>
+
+                                        <div className="mt-4 pt-4 border-t border-slate-200/50 flex-shrink-0">
+                                            <button
+                                                id={`send-btn-${plan.id}`}
+                                                onClick={() => sendToBoard(plan)}
+                                                className="w-full py-2.5 hover:bg-indigo-600 rounded-xl bg-slate-900 text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 hover:scale-[1.02] active:scale-95"
+                                                title="Send tasks to Kanban Board"
+                                            >
+                                                <Send size={14} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Send to Board</span>
+                                            </button>
                                         </div>
                                     </motion.div>
                                 ))}
