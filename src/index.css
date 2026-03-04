@@ -45,9 +45,17 @@ textarea {
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
@@ -77,10 +85,12 @@ textarea {
 .board-scroll::-webkit-scrollbar {
   height: 4px;
 }
+
 .board-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .board-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 10px;
 }
