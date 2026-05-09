@@ -1,41 +1,51 @@
 # 📋 Kanban Board
 
-A sleek, modern, and highly interactive **Kanban Board** application built with the latest web technologies. This project focuses on a premium user experience with smooth drag-and-drop interactions, a minimalist design, and a responsive layout.
+A modern, comprehensive productivity application built with React, TypeScript, and Vite. Beyond just a board, it features a focus timer, goal planning, and analytics to help you manage your tasks effectively.
 
 ---
 
-# 📋 Kanban Board
+## ✨ Key Features
 
-A modern, responsive Kanban board built with React + TypeScript and powered by Vite. It focuses on smooth drag-and-drop task management, a clean UX, and a lightweight codebase that's easy to extend.
-
----
-
-## ✨ Highlights
-
-- Fluid drag & drop powered by `@dnd-kit`.
-- Create and move tasks between columns (To Do, Doing, Done).
-- Responsive layout and subtle animations for polished UX.
-- Persists user name and board state in `localStorage` for a simple offline-first experience.
+- **🎯 Fluid Drag & Drop**: Seamlessly move tasks between columns using `@dnd-kit`, now fully optimized for mobile devices with smooth touch support.
+- **⏱️ Focus Timer**: Built-in pomodoro-style timer to keep you on track, featuring a distraction-free fullscreen mode.
+- **🎯 Goals & Planning**: Set high-level goals that automatically generate actionable plans and checklists for your board.
+- **📊 Analytics Dashboard**: Gain insights into your productivity with built-in task analytics and completion metrics.
+- **📝 Advanced Task Details**: Rich `TaskDetailsModal` for in-depth editing of task descriptions, subtasks, and metadata.
+- **📤 Export Tasks**: Easily export tasks for a specified day directly from the main board.
+- **✨ Premium UI/UX**:
+  - Smooth animations and transitions powered by `framer-motion`.
+  - Beautiful iconography via `lucide-react`.
+  - Custom interactive cursor and modern aesthetics (`clsx`, `tailwind-merge`, and Tailwind CSS 4).
 
 ---
 
 ## 🚀 Tech Stack
 
-- React 19 + TypeScript
-- Vite (dev tooling)
-- Tailwind CSS 4 (styles)
-- @dnd-kit/core (drag & drop)
+- **Framework**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Drag & Drop**: [@dnd-kit/core](https://dndkit.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
 ---
 
-## 📁 Project Structure (short)
+## 📁 Project Structure
 
-```
+```text
 src/
-├─ components/        # UI: Board, Column, TaskCard, Header, Sidebar
-├─ type/              # TypeScript types
-├─ App.tsx            # App shell and routing
-└─ main.tsx           # Entry point
+├── components/        # Feature-rich UI components
+│   ├── Board.tsx              # Core drag-and-drop board & export logic
+│   ├── FocusTimer.tsx         # Fullscreen-capable productivity timer
+│   ├── Goals.tsx              # Goal setting and automatic checklist planning
+│   ├── Analytics.tsx          # Productivity metrics and insights
+│   ├── TaskDetailsModal.tsx   # Detailed task inspection and editing
+│   ├── CustomCursor.tsx       # Interactive UI cursor
+│   └── ...                    # Reusable components (Header, Sidebar, Column, TaskCard)
+├── lib/               # Utility functions
+├── type/              # TypeScript definitions
+├── App.tsx            # Main application layout & routing
+└── main.tsx           # Entry point
 ```
 
 ---
@@ -51,31 +61,14 @@ npm install
 npm run dev
 ```
 
-Available scripts (from `package.json`):
+Available scripts:
 
-```
+```bash
 npm run dev     # start dev server (Vite)
-npm run build   # build for production (TS build + Vite)
+npm run build   # build for production
 npm run preview # preview the production build
 npm run lint    # run ESLint
 ```
-
----
-
-## 🛠 Development Notes
-
-- Tailwind CSS v4 is configured in the project—edit `tailwind.config.js` to adjust themes or add plugins.
-- The drag-and-drop behavior is implemented with `@dnd-kit/core`; look at `src/components/Board.tsx` and `Column.tsx` for the core logic.
-- State persistence uses `localStorage` for simplicity; consider adding a backend (Supabase/Firebase) for multi-device sync.
-
----
-
-## 📦 Future Roadmap
-
-- Server-backed persistence (Supabase / Firebase)
-- Task editing & deletion
-- Due dates, labels, and priorities
-- Dark mode and accessibility improvements
 
 ---
 
@@ -96,4 +89,4 @@ MIT — see LICENSE for details.
 
 ---
 
-Made with ❤️ by Aum Mule
+Made with ❤️ by [Aum Mule](https://github.com/AumMule)
