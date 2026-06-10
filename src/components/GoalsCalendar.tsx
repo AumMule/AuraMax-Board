@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, ChevronRight, Plus, X, Target, Calendar,
+  ChevronLeft, ChevronRight, Plus, X, Target,
   CheckCircle2, Circle, Flame, Trash2, Edit3, Check, Flag,
   Upload, Copy, CheckCheck, Sparkles
 } from 'lucide-react';
