@@ -139,8 +139,9 @@ export default function GoalsCalendar() {
           current.desc = line.replace('DESCRIPTION:', '').trim();
         } else if (line.startsWith('LINK:') && current) {
           current.link = line.replace('LINK:', '').trim();
-        } else if (line.startsWith('- ') && current) {
-          current.milestones.push(line.replace(/^- /, '').trim());
+        } else if ((line.startsWith('- ') || line.startsWith('* ') || line.startsWith('• ') || /^\d+\.\s/.test(line)) && current) {
+          const cleanText = line.replace(/^(?:-\s*|\*\s*|•\s*|\d+\.\s*)/, '').trim();
+          current.milestones.push(cleanText);
         }
       }
       if (current) {
@@ -214,9 +215,19 @@ export default function GoalsCalendar() {
 
   const saveGoal = () => {
     if (!form.title.trim() || !selectedKey) return;
+    
+    let finalMilestones = [...milestones];
+    if (form.milestone.trim()) {
+      finalMilestones.push({
+        id: crypto.randomUUID(),
+        text: form.milestone.trim(),
+        done: false
+      });
+    }
+
     if (editGoal) {
       setGoals(prev => prev.map(g => g.id === editGoal.id
-        ? { ...g, title: form.title, description: form.description, referenceLink: form.referenceLink, color: form.color, milestones }
+        ? { ...g, title: form.title, description: form.description, referenceLink: form.referenceLink, color: form.color, milestones: finalMilestones }
         : g
       ));
     } else {
@@ -229,7 +240,7 @@ export default function GoalsCalendar() {
         color: form.color,
         status: 'active',
         createdAt: Date.now(),
-        milestones
+        milestones: finalMilestones
       };
       setGoals(prev => [...prev, ng]);
     }
@@ -260,6 +271,30 @@ export default function GoalsCalendar() {
     }
     return g;
   }));
+
+  const saveTasks = (t: Task[]) => {
+    localStorage.setItem('kanban-tasks', JSON.stringify(t));
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const toggleTaskChecklistItem = (taskId: string, itemId: string) => {
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId) {
+        const updatedChecklist = t.checklists.map(item =>
+          item.id === itemId ? { ...item, completed: !item.completed } : item
+        );
+        const allCompleted = updatedChecklist.length > 0 && updatedChecklist.every(item => item.completed);
+        return {
+          ...t,
+          checklists: updatedChecklist,
+          status: allCompleted ? 'done' as const : t.status === 'done' ? 'todo' as const : t.status
+        };
+      }
+      return t;
+    });
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
 
   const addMilestone = () => {
     if (!form.milestone.trim()) return;
@@ -480,25 +515,72 @@ export default function GoalsCalendar() {
                             </div>
                           )}
                           {g.milestones.length > 0 && (
-                            <div className="ml-5">
+                            <div className="ml-5 space-y-1.5 mt-2" onClick={e => e.stopPropagation()}>
+                              <div className="space-y-1">
+                                {g.milestones.map(m => (
+                                  <button
+                                    key={m.id}
+                                    onClick={() => toggleMilestone(g.id, m.id)}
+                                    className="flex items-center gap-1.5 w-full text-left py-0.5 group/ms"
+                                  >
+                                    <div className={`w-3.5 h-3.5 rounded flex-shrink-0 border flex items-center justify-center transition-all ${
+                                      m.done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 group-hover/ms:border-zinc-400'
+                                    }`}>
+                                      {m.done && <Check size={8} className="text-white" />}
+                                    </div>
+                                    <span className={`text-[11px] ${m.done ? 'line-through text-zinc-500 font-medium' : 'text-zinc-400 group-hover/ms:text-zinc-300'}`}>
+                                      {m.text}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
                               <div className="h-1 bg-white/5 rounded-full mt-2">
                                 <div
-                                  className="h-1 rounded-full transition-all"
-                                  style={{ width: `${g.milestones.length ? (g.milestones.filter(m => m.done).length / g.milestones.length) * 100 : 0}%`, background: g.color }}
+                                  className="h-1 rounded-full transition-all duration-300"
+                                  style={{ width: `${(g.milestones.filter(m => m.done).length / g.milestones.length) * 100}%`, background: g.color }}
                                 />
                               </div>
-                              <p className="text-[9px] text-zinc-500 mt-1 font-semibold">
-                                {g.milestones.filter(m => m.done).length}/{g.milestones.length} tasks completed
-                              </p>
                             </div>
                           )}
                         </div>
                       ))}
                       {selectedTasks.map(t => (
-                        <div key={t.id} className="border-l-2 border-zinc-700 bg-white/[0.02] rounded-xl p-3 flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${t.status === 'done' ? 'bg-emerald-500' : t.status === 'doing' ? 'bg-orange-500' : 'bg-zinc-600'}`} />
-                          <span className={`text-xs font-medium flex-1 ${t.status === 'done' ? 'line-through text-zinc-600' : 'text-zinc-300'}`}>{t.title}</span>
-                          <span className="text-[10px] text-zinc-600 bg-white/5 px-2 py-0.5 rounded-full">{t.status}</span>
+                        <div key={t.id} className="border-l-2 border-zinc-700 bg-white/[0.02] hover:bg-white/[0.04] transition-all rounded-xl p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${t.status === 'done' ? 'bg-emerald-500' : t.status === 'doing' ? 'bg-orange-500' : 'bg-zinc-600'}`} />
+                            <span className={`text-xs font-semibold flex-1 ${t.status === 'done' ? 'line-through text-zinc-500 font-medium' : 'text-zinc-300'}`}>{t.title}</span>
+                            <span className="text-[10px] text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">{t.status}</span>
+                          </div>
+                          {t.checklists && t.checklists.length > 0 && (
+                            <div className="ml-4 space-y-1.5 mt-2">
+                              <div className="space-y-1">
+                                {t.checklists.map(item => (
+                                  <button
+                                    key={item.id}
+                                    onClick={() => toggleTaskChecklistItem(t.id, item.id)}
+                                    className="flex items-center gap-1.5 w-full text-left py-0.5 group/chk"
+                                  >
+                                    <div className={`w-3 h-3 rounded flex-shrink-0 border flex items-center justify-center transition-all ${
+                                      item.completed ? 'bg-purple-500 border-purple-500' : 'border-zinc-650 group-hover/chk:border-zinc-400'
+                                    }`}>
+                                      {item.completed && <Check size={8} className="text-white" />}
+                                    </div>
+                                    <span className={`text-[10px] ${item.completed ? 'line-through text-zinc-500 font-medium' : 'text-zinc-400 group-hover/chk:text-zinc-300'}`}>
+                                      {item.text}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="h-1 bg-white/5 rounded-full mt-2">
+                                <div
+                                  className="h-1 rounded-full transition-all duration-300 bg-purple-500"
+                                  style={{
+                                    width: `${(t.checklists.filter(c => c.completed).length / t.checklists.length) * 100}%`
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
