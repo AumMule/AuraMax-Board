@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, X, Target,
   CheckCircle2, Circle, Flame, Trash2, Edit3, Check, Flag,
-  Upload, Copy, CheckCheck, Sparkles
+  Upload, Copy, CheckCheck, Sparkles, Link2
 } from 'lucide-react';
 import type { Task } from '../type/task';
 
@@ -13,6 +13,7 @@ interface Goal {
   id: string;
   title: string;
   description?: string;
+  referenceLink?: string;
   dateKey: string; // 'YYYY-MM-DD'
   color: string;
   status: GoalStatus;
@@ -43,6 +44,7 @@ const CHATGPT_PROMPT = `Format my study plan using EXACTLY this structure for th
 GOAL: [goal title]
 COLOR: [orange|purple|cyan|green|red|yellow|blue]
 DESCRIPTION: [brief one-line description]
+LINK: [optional reference link URL]
 - [milestone 1]
 - [milestone 2]
 - [milestone 3]
@@ -56,6 +58,7 @@ Rules:
 • Use ISO date format YYYY-MM-DD (e.g. 2026-06-10)
 • Each date block can have multiple GOALs
 • COLOR must be exactly one of: orange, purple, cyan, green, red, yellow, blue
+• LINK line is optional
 • Each milestone line starts with "- "
 • DESCRIPTION line is optional
 • Do not add any extra text outside this format
@@ -79,8 +82,10 @@ export default function GoalsCalendar() {
   const [selectedKey, setSelectedKey] = useState<string | null>(toKey(today));
   const [showForm, setShowForm] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
-  const [form, setForm] = useState({ title: '', description: '', color: COLORS[0], milestone: '' });
+  const [form, setForm] = useState({ title: '', description: '', referenceLink: '', color: COLORS[0], milestone: '' });
   const [milestones, setMilestones] = useState<{ id: string; text: string; done: boolean }[]>([]);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+  const [overwriteMatchingDates, setOverwriteMatchingDates] = useState(true);
 
   const copyPrompt = () => {
     navigator.clipboard.writeText(CHATGPT_PROMPT);
@@ -109,7 +114,7 @@ export default function GoalsCalendar() {
 
       // Split remaining lines into GOAL blocks
       const rest = lines.slice(1);
-      let current: { title: string; color: string; desc: string; milestones: string[] } | null = null;
+      let current: { title: string; color: string; desc: string; link: string; milestones: string[] } | null = null;
 
       for (const line of rest) {
         if (line.startsWith('GOAL:')) {
@@ -118,6 +123,7 @@ export default function GoalsCalendar() {
               id: crypto.randomUUID(),
               title: current.title,
               description: current.desc || undefined,
+              referenceLink: current.link || undefined,
               dateKey,
               color: current.color,
               status: 'active',
@@ -125,12 +131,14 @@ export default function GoalsCalendar() {
               milestones: current.milestones.map(m => ({ id: crypto.randomUUID(), text: m, done: false }))
             });
           }
-          current = { title: line.replace('GOAL:', '').trim(), color: '#f97316', desc: '', milestones: [] };
+          current = { title: line.replace('GOAL:', '').trim(), color: '#f97316', desc: '', link: '', milestones: [] };
         } else if (line.startsWith('COLOR:') && current) {
           const c = line.replace('COLOR:', '').trim().toLowerCase();
           current.color = COLOR_MAP[c] || '#f97316';
         } else if (line.startsWith('DESCRIPTION:') && current) {
           current.desc = line.replace('DESCRIPTION:', '').trim();
+        } else if (line.startsWith('LINK:') && current) {
+          current.link = line.replace('LINK:', '').trim();
         } else if (line.startsWith('- ') && current) {
           current.milestones.push(line.replace(/^- /, '').trim());
         }
@@ -140,6 +148,7 @@ export default function GoalsCalendar() {
           id: crypto.randomUUID(),
           title: current.title,
           description: current.desc || undefined,
+          referenceLink: current.link || undefined,
           dateKey,
           color: current.color,
           status: 'active',
@@ -153,7 +162,15 @@ export default function GoalsCalendar() {
       setImportResult({ added: 0, error: 'Could not parse any goals. Check the format.' });
       return;
     }
-    setGoals(prev => [...prev, ...newGoals]);
+    if (overwriteMatchingDates) {
+      const importedDates = new Set(newGoals.map(g => g.dateKey));
+      setGoals(prev => [
+        ...prev.filter(g => !importedDates.has(g.dateKey)),
+        ...newGoals
+      ]);
+    } else {
+      setGoals(prev => [...prev, ...newGoals]);
+    }
     setImportResult({ added: newGoals.length });
     setImportText('');
     setTimeout(() => { setShowImport(false); setImportResult(null); }, 1800);
@@ -183,14 +200,14 @@ export default function GoalsCalendar() {
   const openNew = (key: string) => {
     setSelectedKey(key);
     setEditGoal(null);
-    setForm({ title: '', description: '', color: COLORS[0], milestone: '' });
+    setForm({ title: '', description: '', referenceLink: '', color: COLORS[0], milestone: '' });
     setMilestones([]);
     setShowForm(true);
   };
 
   const openEdit = (g: Goal) => {
     setEditGoal(g);
-    setForm({ title: g.title, description: g.description || '', color: g.color, milestone: '' });
+    setForm({ title: g.title, description: g.description || '', referenceLink: g.referenceLink || '', color: g.color, milestone: '' });
     setMilestones([...g.milestones]);
     setShowForm(true);
   };
@@ -199,7 +216,7 @@ export default function GoalsCalendar() {
     if (!form.title.trim() || !selectedKey) return;
     if (editGoal) {
       setGoals(prev => prev.map(g => g.id === editGoal.id
-        ? { ...g, title: form.title, description: form.description, color: form.color, milestones }
+        ? { ...g, title: form.title, description: form.description, referenceLink: form.referenceLink, color: form.color, milestones }
         : g
       ));
     } else {
@@ -207,6 +224,7 @@ export default function GoalsCalendar() {
         id: crypto.randomUUID(),
         title: form.title,
         description: form.description,
+        referenceLink: form.referenceLink,
         dateKey: selectedKey,
         color: form.color,
         status: 'active',
@@ -218,17 +236,30 @@ export default function GoalsCalendar() {
     setShowForm(false);
   };
 
-  const deleteGoal = (id: string) => setGoals(prev => prev.filter(g => g.id !== id));
+  const deleteGoal = (id: string) => {
+    setGoals(prev => prev.filter(g => g.id !== id));
+    if (selectedGoalId === id) {
+      setSelectedGoalId(null);
+    }
+  };
 
-  const toggleGoalDone = (id: string) => setGoals(prev => prev.map(g =>
-    g.id === id ? { ...g, status: g.status === 'done' ? 'active' : 'done' } : g
-  ));
+  const toggleGoalDone = (id: string) => setGoals(prev => prev.map(g => {
+    if (g.id === id) {
+      const nextStatus = g.status === 'done' ? 'active' : 'done';
+      const updatedMilestones = g.milestones.map(m => ({ ...m, done: nextStatus === 'done' }));
+      return { ...g, status: nextStatus, milestones: updatedMilestones };
+    }
+    return g;
+  }));
 
-  const toggleMilestone = (goalId: string, mId: string) => setGoals(prev => prev.map(g =>
-    g.id === goalId
-      ? { ...g, milestones: g.milestones.map(m => m.id === mId ? { ...m, done: !m.done } : m) }
-      : g
-  ));
+  const toggleMilestone = (goalId: string, mId: string) => setGoals(prev => prev.map(g => {
+    if (g.id === goalId) {
+      const updatedMilestones = g.milestones.map(m => m.id === mId ? { ...m, done: !m.done } : m);
+      const allDone = updatedMilestones.length > 0 && updatedMilestones.every(m => m.done);
+      return { ...g, milestones: updatedMilestones, status: allDone ? 'done' : 'active' };
+    }
+    return g;
+  }));
 
   const addMilestone = () => {
     if (!form.milestone.trim()) return;
@@ -242,6 +273,7 @@ export default function GoalsCalendar() {
   const allGoals = [...goals].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   const activeGoals = allGoals.filter(g => g.status !== 'done');
   const doneGoals = allGoals.filter(g => g.status === 'done');
+  const selectedGoalForDetail = goals.find(g => g.id === selectedGoalId) || null;
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -376,12 +408,26 @@ export default function GoalsCalendar() {
                         {new Date(selectedKey + 'T12:00:00').toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </p>
                     </div>
-                    <button
-                      onClick={() => openNew(selectedKey)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all hover:scale-105"
-                    >
-                      <Plus size={12} /> Add Goal
-                    </button>
+                    <div className="flex gap-1.5">
+                      {selectedGoals.length > 0 && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete all goals for ${new Date(selectedKey + 'T12:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric' })}?`)) {
+                              setGoals(prev => prev.filter(g => g.dateKey !== selectedKey));
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-all"
+                        >
+                          <Trash2 size={11} /> Clear Day
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openNew(selectedKey)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all hover:scale-105"
+                      >
+                        <Plus size={11} /> Add Goal
+                      </button>
+                    </div>
                   </div>
 
                   {selectedGoals.length === 0 && selectedTasks.length === 0 ? (
@@ -389,37 +435,61 @@ export default function GoalsCalendar() {
                   ) : (
                     <div className="space-y-3">
                       {selectedGoals.map(g => (
-                        <div key={g.id} style={{ borderLeftColor: g.color }} className="border-l-2 bg-white/[0.03] rounded-xl p-3 space-y-2">
+                        <div
+                          key={g.id}
+                          style={{ borderLeftColor: g.color }}
+                          onClick={() => setSelectedGoalId(g.id)}
+                          className="border-l-2 bg-white/[0.03] hover:bg-white/[0.06] transition-all rounded-xl p-3 space-y-2 cursor-pointer group"
+                        >
                           <div className="flex items-start gap-2">
-                            <button onClick={() => toggleGoalDone(g.id)} className="mt-0.5 flex-shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleGoalDone(g.id); }}
+                              className="mt-0.5 flex-shrink-0"
+                            >
                               {g.status === 'done'
                                 ? <CheckCircle2 size={14} className="text-emerald-400" />
                                 : <Circle size={14} className="text-zinc-500" />
                               }
                             </button>
-                            <span className={`text-sm font-semibold flex-1 ${g.status === 'done' ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
+                            <span className={`text-sm font-semibold flex-1 group-hover:text-white transition-colors ${g.status === 'done' ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
                               {g.title}
                             </span>
-                            <button onClick={() => openEdit(g)} className="text-zinc-600 hover:text-zinc-300 transition-colors"><Edit3 size={12} /></button>
-                            <button onClick={() => deleteGoal(g.id)} className="text-zinc-600 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openEdit(g); }}
+                              className="text-zinc-600 hover:text-zinc-300 transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Are you sure you want to delete this goal?')) {
+                                  deleteGoal(g.id);
+                                }
+                              }}
+                              className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </div>
-                          {g.description && <p className="text-[11px] text-zinc-500 ml-5">{g.description}</p>}
+                          {g.description && <p className="text-[11px] text-zinc-500 ml-5 truncate">{g.description}</p>}
+                          {g.referenceLink && (
+                            <div className="flex items-center gap-1 text-[10px] text-purple-400 ml-5">
+                              <Link2 size={10} />
+                              <span className="truncate">{g.referenceLink}</span>
+                            </div>
+                          )}
                           {g.milestones.length > 0 && (
-                            <div className="ml-5 space-y-1">
-                              {g.milestones.map(m => (
-                                <button key={m.id} onClick={() => toggleMilestone(g.id, m.id)} className="flex items-center gap-1.5 w-full text-left">
-                                  <div className={`w-3 h-3 rounded flex-shrink-0 border flex items-center justify-center transition-all ${m.done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'}`}>
-                                    {m.done && <Check size={8} className="text-white" />}
-                                  </div>
-                                  <span className={`text-[11px] ${m.done ? 'line-through text-zinc-600' : 'text-zinc-400'}`}>{m.text}</span>
-                                </button>
-                              ))}
+                            <div className="ml-5">
                               <div className="h-1 bg-white/5 rounded-full mt-2">
                                 <div
                                   className="h-1 rounded-full transition-all"
                                   style={{ width: `${g.milestones.length ? (g.milestones.filter(m => m.done).length / g.milestones.length) * 100 : 0}%`, background: g.color }}
                                 />
                               </div>
+                              <p className="text-[9px] text-zinc-500 mt-1 font-semibold">
+                                {g.milestones.filter(m => m.done).length}/{g.milestones.length} tasks completed
+                              </p>
                             </div>
                           )}
                         </div>
@@ -450,7 +520,11 @@ export default function GoalsCalendar() {
                   {activeGoals.slice(0, 8).map(g => (
                     <button
                       key={g.id}
-                      onClick={() => { setSelectedKey(g.dateKey); setViewDate(new Date(g.dateKey + 'T12:00:00')); }}
+                      onClick={() => {
+                        setSelectedKey(g.dateKey);
+                        setViewDate(new Date(g.dateKey + 'T12:00:00'));
+                        setSelectedGoalId(g.id);
+                      }}
                       className="w-full flex items-center gap-2.5 p-2.5 bg-white/[0.02] hover:bg-white/[0.05] rounded-xl transition-all text-left"
                     >
                       <div style={{ background: g.color }} className="w-2 h-2 rounded-full flex-shrink-0" />
@@ -529,6 +603,23 @@ export default function GoalsCalendar() {
                 />
               </div>
 
+              {/* Import Options */}
+              <div className="mb-4 flex items-center gap-2.5 bg-white/[0.03] border border-white/10 rounded-xl p-3">
+                <input
+                  type="checkbox"
+                  id="overwrite-matching-dates"
+                  checked={overwriteMatchingDates}
+                  onChange={e => setOverwriteMatchingDates(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/10 bg-white/5 text-purple-500 focus:ring-purple-500 focus:ring-offset-[#111113] cursor-pointer"
+                />
+                <label
+                  htmlFor="overwrite-matching-dates"
+                  className="text-xs font-bold text-zinc-300 cursor-pointer select-none"
+                >
+                  Overwrite existing goals on matching imported dates
+                </label>
+              </div>
+
               {importResult && (
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
@@ -600,6 +691,12 @@ export default function GoalsCalendar() {
                   rows={2}
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-zinc-400 placeholder:text-zinc-600 outline-none focus:border-orange-500/50 transition-all resize-none custom-scrollbar"
                 />
+                <input
+                  placeholder="Reference Link (optional)..."
+                  value={form.referenceLink}
+                  onChange={e => setForm(f => ({ ...f, referenceLink: e.target.value }))}
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-zinc-400 placeholder:text-zinc-600 outline-none focus:border-orange-500/50 transition-all"
+                />
 
                 {/* Color Picker */}
                 <div>
@@ -651,6 +748,166 @@ export default function GoalsCalendar() {
                 >
                   {editGoal ? 'Save Changes' : 'Create Goal'}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Goal Details Modal */}
+      <AnimatePresence>
+        {selectedGoalForDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedGoalId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-lg bg-[#111113] border border-white/10 rounded-3xl p-6 shadow-2xl shadow-black/50"
+            >
+              <div className="flex items-start justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedGoalForDetail.color }} />
+                  <div>
+                    <h3 className="text-lg font-black text-white leading-tight break-all">{selectedGoalForDetail.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        selectedGoalForDetail.status === 'done'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                      }`}>
+                        {selectedGoalForDetail.status}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">
+                        {new Date(selectedGoalForDetail.dateKey + 'T12:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedGoalId(null)} className="text-zinc-600 hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-white/5">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {/* Description */}
+                {selectedGoalForDetail.description && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-1.5">Description</p>
+                    <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                      {selectedGoalForDetail.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Reference Link */}
+                {selectedGoalForDetail.referenceLink && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-1.5">Reference Link</p>
+                    <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 hover:border-white/10 rounded-xl p-3 transition-colors">
+                      <Link2 size={14} className="text-purple-400 flex-shrink-0" />
+                      <a
+                        href={selectedGoalForDetail.referenceLink.startsWith('http') ? selectedGoalForDetail.referenceLink : `https://${selectedGoalForDetail.referenceLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-purple-400 hover:text-purple-300 hover:underline truncate flex-1 font-mono"
+                      >
+                        {selectedGoalForDetail.referenceLink}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Milestones Checklist */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Milestones Tasks</p>
+                    <span className="text-[10px] font-black text-zinc-400">
+                      {selectedGoalForDetail.milestones.filter(m => m.done).length}/{selectedGoalForDetail.milestones.length}
+                    </span>
+                  </div>
+
+                  {selectedGoalForDetail.milestones.length === 0 ? (
+                    <p className="text-xs text-zinc-600 italic py-2">No milestone tasks defined.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 bg-white/[0.01] rounded-xl p-2 border border-white/5">
+                      {selectedGoalForDetail.milestones.map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => toggleMilestone(selectedGoalForDetail.id, m.id)}
+                          className="flex items-center gap-2.5 w-full text-left p-2 rounded-lg hover:bg-white/[0.02] transition-colors"
+                        >
+                          <div className={`w-4 h-4 rounded flex-shrink-0 border flex items-center justify-center transition-all ${
+                            m.done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400'
+                          }`}>
+                            {m.done && <Check size={10} className="text-white" />}
+                          </div>
+                          <span className={`text-xs ${m.done ? 'line-through text-zinc-600 font-medium' : 'text-zinc-300'}`}>
+                            {m.text}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Progress Bar */}
+                  {selectedGoalForDetail.milestones.length > 0 && (
+                    <div className="mt-3">
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${(selectedGoalForDetail.milestones.filter(m => m.done).length / selectedGoalForDetail.milestones.length) * 100}%`,
+                            backgroundColor: selectedGoalForDetail.color
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Action Buttons */}
+                <div className="flex gap-3 pt-2 border-t border-white/5">
+                  <button
+                    onClick={() => {
+                      // Mark entire goal done/active
+                      toggleGoalDone(selectedGoalForDetail.id);
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                      selectedGoalForDetail.status === 'done'
+                        ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border-white/10'
+                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                    }`}
+                  >
+                    <CheckCircle2 size={13} />
+                    {selectedGoalForDetail.status === 'done' ? 'Mark Active' : 'Mark Complete'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedGoalId(null);
+                      openEdit(selectedGoalForDetail);
+                    }}
+                    className="py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold transition-all"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this goal?')) {
+                        deleteGoal(selectedGoalForDetail.id);
+                      }
+                    }}
+                    className="py-2 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-xl text-xs font-bold transition-all"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
