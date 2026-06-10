@@ -1,5 +1,5 @@
 import Account from './Account'
-import { LayoutDashboard, Zap, Target, BookOpen, X, Clock } from 'lucide-react'
+import { LayoutDashboard, Zap, CalendarDays, BookOpen, X, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '../lib/utils'
 
@@ -14,7 +14,7 @@ const Sidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarProps) =
   const menuItems = [
     { icon: LayoutDashboard, label: 'Board' },
     { icon: Zap, label: 'Analytics' },
-    { icon: Target, label: 'Goals' },
+    { icon: CalendarDays, label: 'Goals' },
     { icon: BookOpen, label: 'Docs' },
     { icon: Clock, label: 'Timer' },
   ]

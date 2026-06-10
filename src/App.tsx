@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import Board from './components/Board'
-import Goals from './components/Goals'
+import GoalsCalendar from './components/GoalsCalendar'
 import FocusTimer from './components/FocusTimer'
 import Analytics from './components/Analytics'
 
@@ -47,7 +47,7 @@ const App = () => {
         <main className="flex-1 min-h-0 overflow-hidden relative">
           {activeTab === "Board" && <Board />}
           {activeTab === "Analytics" && <Analytics />}
-          {activeTab === "Goals" && <Goals />}
+          {activeTab === "Goals" && <GoalsCalendar />}
           {activeTab === "Timer" && <FocusTimer />}
         </main>
       </div>
